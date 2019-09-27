@@ -4,7 +4,8 @@ import system.io
 open io io.proc io.fs
 
 def git_clone (repo : string) : io unit :=
-io.cmd { cmd := "git", args := ["checkout",repo] } >>= put_str_ln
+do put_str_ln sformat!"clone {repo}",
+   io.cmd { cmd := "git", args := ["clone",repo] } >>= put_str_ln
 
 def read_lines (fn : string) : io (list string) :=
 do h ← mk_file_handle fn io.mode.read ff,
