@@ -3,7 +3,6 @@ import system.io
 
 def io.cmd' (args : io.process.spawn_args) : io unit :=
 do child ← io.proc.spawn args,
-  io.fs.close child.stdout,
   exitv ← io.proc.wait child,
   when (exitv ≠ 0) $ io.fail $ "process exited with status " ++ repr exitv,
   return ()
