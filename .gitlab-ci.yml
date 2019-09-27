@@ -8,5 +8,5 @@ test:
   - source ~/.elan/env
   - elan toolchain install leanprover-community/lean:nightly
   - elan toolchain install 3.4.2
-  - elan default set 3.4.2
+  - elan default 3.4.2
   - lean -v
