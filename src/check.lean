@@ -25,10 +25,19 @@ do h ← mk_file_handle fn io.mode.read ff,
                 return $ some (c.to_string :: r) },
    return r.reverse
 
+def list.take_while {α} (p : α → Prop) [decidable_pred p] : list α → list α
+| [] := []
+| (x :: xs) :=
+  if p x then x :: list.take_while xs
+         else []
+
+def trim : string → string :=
+list.as_string ∘ list.take_while (not ∘ char.is_whitespace) ∘ list.drop_while char.is_whitespace ∘ string.to_list
+
 def main : io unit :=
     do put_str_ln "hello world",
        xs <- read_lines "pkgs/list",
        print xs,
        mkdir "build",
        env.set_cwd "build",
-       xs.mmap' git_clone
+       xs.mmap' $ git_clone ∘ trim
