@@ -6,4 +6,6 @@ test:
       curl https://raw.githubusercontent.com/Kha/elan/master/elan-init.sh -sSf | sh -s -- --default-toolchain none -y
     fi
   - source ~/.elan/env
+  - elan toolchain install leanprover-community/lean:nightly
+  - elan toolchain install 3.4.2
   - lean -v
