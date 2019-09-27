@@ -1,0 +1,36 @@
+
+[snapshot.flypitch]
+git = ["https://github.com/flypitch/flypitch"]
+rev = "c9f22eeab9ff3083020976f981c62d5bdc698958"
+desc = "missing"
+
+[snapshot.lean-homotopy-theory]
+git = ["https://github.com/rwbarton/lean-homotopy-theory"]
+rev = "5fc5b4c6835e7cf2318a33bfd183d60d54903f09"
+desc = "missing"
+
+[snapshot.lean-perfectoid-spaces]
+git = ["https://github.com/leanprover-community/lean-perfectoid-spaces"]
+rev = "c4b868638b1f51743a25eb8c06beea23ba8a5c7c"
+desc = "missing"
+
+[snapshot.mathlib-nursery]
+git = ["https://github.com/leanprover-community/mathlib-nursery"]
+rev = "0479b31fa5b4d39f41e89b8584c9f5bf5271e8ec"
+desc = "missing"
+
+[snapshot.mathlib]
+git = ["https://github.com/leanprover/mathlib", "https://github.com/leanprover-community/mathlib"]
+rev = "4bb8d4475f897c8997100d31fe84b33050444374"
+desc = "Lean mathematical components library"
+
+[snapshot.qpf]
+git = ["https://github.com/avigad/qpf"]
+rev = "debe2eacb8cf46b21aba2eaf3f2e20940da0263b"
+desc = "missing"
+
+[snapshot.unitb-lean-lib]
+git = ["https://github.com/unitb/lean-lib"]
+rev = "439b80e606b4ebe4909a08b1d77f4f5c0ee3dee9"
+desc = "missing"
+

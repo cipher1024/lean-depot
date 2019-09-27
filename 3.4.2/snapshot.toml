@@ -1,0 +1,6 @@
+
+[snapshot.flypitch]
+git = ["https://github.com/flypitch/flypitch"]
+rev = "9d2f16f24642da7fb3c49cd042606eab9f52592b"
+desc = "A formal proof of the independence of the continuum hypothesis"
+

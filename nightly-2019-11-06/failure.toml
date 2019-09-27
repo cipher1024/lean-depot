@@ -1,0 +1,2 @@
+[failure]
+mathlib = { git = "https://github.com/leanprover-community/mathlib", rev = "94e368c5025c8e888da89c5bfc326c88d05f9496" } 
