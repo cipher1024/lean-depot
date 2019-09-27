@@ -1,13 +1,13 @@
 
 import system.io
 
-open io io.proc
+open io io.proc io.fs
 
-def git_clone (repo : string) : io unit := 
-spawn { cmd := "git", args := ["checkout",repo] }
+def git_clone (repo : string) : io unit :=
+io.cmd { cmd := "git", args := ["checkout",repo] } >>= put_str_ln
 
-def read_lines (fn : string) : io (list string) := 
-do h ← mk_file_handle fn io.mode.read bin,
+def read_lines (fn : string) : io (list string) :=
+do h ← mk_file_handle fn io.mode.read ff,
    r ← iterate [] $ λ r,
       do { done ← is_eof h,
            if done
@@ -17,11 +17,10 @@ do h ← mk_file_handle fn io.mode.read bin,
                 return $ some (c.to_string :: r) },
    return r.reverse
 
-
-def main := 
+def main : io unit :=
     do put_str_ln "hello world",
        xs <- read_lines "pkgs/list",
        print xs,
        mkdir "build",
-       set_cwd "build",
-       xs.mmap git_clone
+       env.set_cwd "build",
+       xs.mmap' git_clone
