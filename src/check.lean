@@ -162,10 +162,10 @@ do m ← leanpkg.manifest.from_file sformat!"{s}/{leanpkg.leanpkg_toml_fn}",
 def main : io unit :=
 do sd ← setup_snapshots,
    -- env.set_cwd "/Users/simon/lean/lean-depot",
-   -- sd.mmap' make,
+   sd.mmap' make,
    pure ()
 
 -- #eval env.set_cwd "/Users/simon/lean/lean-depot"
-#eval do
-  env.set_cwd "/Users/simon/lean/lean-depot",
-  main, put_str_ln "foo"
+-- #eval do
+--   env.set_cwd "/Users/simon/lean/lean-depot",
+--   main, put_str_ln "foo"
