@@ -41,7 +41,7 @@ def trim : string → string :=
 list.as_string ∘ list.take_while (not ∘ char.is_whitespace) ∘ list.drop_while char.is_whitespace ∘ string.to_list
 
 def split_path (p : string) : list string :=
-p.split (= '/')
+(p.split (= '/')).filter (λ s, ¬ s.is_empty)
 
 -- #eval -- split_path "a/b"
 
@@ -160,10 +160,12 @@ do m ← leanpkg.manifest.from_file sformat!"{s}/{leanpkg.leanpkg_toml_fn}",
    -- cmd' { cmd := "lean", args := ["--make"] ++ m.effective_path }
 
 def main : io unit :=
-do -- env.set_cwd "/Users/simon/lean/lean-depot",
-   sd ← setup_snapshots,
+do sd ← setup_snapshots,
    -- env.set_cwd "/Users/simon/lean/lean-depot",
-   sd.mmap' make
+   -- sd.mmap' make,
+   pure ()
 
 -- #eval env.set_cwd "/Users/simon/lean/lean-depot"
--- #eval main
+#eval do
+  env.set_cwd "/Users/simon/lean/lean-depot",
+  main, put_str_ln "foo"
