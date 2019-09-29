@@ -13,4 +13,5 @@ test:
   - elan toolchain install 3.4.2
   - elan default leanprover-community/lean:nightly # 3.4.2
   - lean -v
+  - leanpkg build
   - lean --run src/check.lean
