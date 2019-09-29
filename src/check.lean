@@ -160,9 +160,9 @@ do m ← leanpkg.manifest.from_file sformat!"{s}/{leanpkg.leanpkg_toml_fn}",
    -- cmd' { cmd := "lean", args := ["--make"] ++ m.effective_path }
 
 def main : io unit :=
-do env.set_cwd "/Users/simon/lean/lean-depot",
+do -- env.set_cwd "/Users/simon/lean/lean-depot",
    sd ← setup_snapshots,
-   env.set_cwd "/Users/simon/lean/lean-depot",
+   -- env.set_cwd "/Users/simon/lean/lean-depot",
    sd.mmap' make
 
 -- #eval env.set_cwd "/Users/simon/lean/lean-depot"

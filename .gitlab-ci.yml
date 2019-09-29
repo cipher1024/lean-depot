@@ -1,5 +1,6 @@
 cache:
-  - build/
+  paths:
+    - build/
 test:
   stage: test
   script:
