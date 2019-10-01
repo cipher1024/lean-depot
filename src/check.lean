@@ -193,9 +193,9 @@ def try (cmd : io unit) : io bool :=
 io.catch (tt <$ cmd) (λ _, pure ff)
 
 def make (s : string) : io bool :=
-do m ← leanpkg.manifest.from_file sformat!"{s}/{leanpkg.leanpkg_toml_fn}",
-   put_str_ln s,
+do put_str_ln s,
    env.get_cwd >>= put_str_ln,
+   m ← leanpkg.manifest.from_file sformat!"{s}/{leanpkg.leanpkg_toml_fn}",
    try $ with_cwd s $ leanpkg.configure >> leanpkg.make []
 
 -- structure
