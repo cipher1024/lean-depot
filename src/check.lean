@@ -239,6 +239,7 @@ do n ← select_snapshot,
    -- _,
    s ← sd.mmap $ λ ⟨s,xs⟩, prod.mk s <$> xs.mmap (λ y, prod.mk y <$> make y),
    leanpkg.write_file "results.toml" (repr $ build_result_file s),
+   cmd' { cmd := "cat", args := ["results.toml"] },
    pure ()
 
 -- #eval env.set_cwd "/Users/simon/lean/lean-depot"
