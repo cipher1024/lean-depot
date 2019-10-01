@@ -138,7 +138,7 @@ do xs <- read_lines "pkgs/list",
 
 def with_cwd {α} (d : string) (m : io α) : io α :=
 do d' ← env.get_cwd,
-   env.set_cwd d *> m <* env.set_cwd d'
+   finally (env.set_cwd d *> m) (env.set_cwd d')
 
 def mk_local (d : leanpkg.dependency) : leanpkg.dependency :=
 { src := match d.src with
@@ -150,7 +150,8 @@ def mk_local (d : leanpkg.dependency) : leanpkg.dependency :=
 -- #exit
 -- (xs : list package) (ys : list leanpkg.manifest) :
 def checkout_snapshot :
-  ℕ × list (string × string × option string × leanpkg.manifest) → io (string × list string)
+  ℕ × list (string × string × option string × leanpkg.manifest) →
+  io (string × list string)
 | (n,m) :=
    do { let sd := sformat!"build/snapshot_{n}",
         mkdir sd tt,
@@ -197,8 +198,6 @@ do put_str_ln s,
    env.get_cwd >>= put_str_ln,
    m ← leanpkg.manifest.from_file sformat!"{s}/{leanpkg.leanpkg_toml_fn}",
    try $ with_cwd s $ leanpkg.configure >> leanpkg.make []
-
--- structure
 
 def build_result_file (xs : list (string × list (string × bool))) : toml.value :=
 toml.value.table $ xs.map $ prod.map id $ toml.value.table ∘ list.map (prod.map id toml.value.bool)
