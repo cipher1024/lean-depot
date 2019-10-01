@@ -10,7 +10,7 @@ do child ← io.proc.spawn args,
 open io io.proc io.fs
 
 def git_checkout_hash (hash : string) : io unit :=
-io.cmd' {cmd := "git", args := ["checkout", "--detach", hash]}
+io.cmd' {cmd := "git", args := ["checkout","-f","--detach",hash]}
 
 def git_clone (repo : string) : option string → io unit
 | none :=
@@ -53,7 +53,6 @@ def split_path (p : string) : list string :=
 
 -- def dep_versions' (l : leanpkg.source) (m : rbmap string (list string)) : rbmap string (list string) :=
 open leanpkg.source
-#check leanpkg.source
 
 @[reducible]
 def vmap := rbmap string $ rbmap (string × string) unit
@@ -83,12 +82,40 @@ end
 instance {α β} [has_lt α] [has_to_string α] [has_to_string β] : has_to_string (rbmap α β) :=
 ⟨ to_string ∘ rbtree.to_list ⟩
 
-def snapshots (m : vmap) : list (ℕ × list (string × string)) :=
-list.enum $
-list.map (prod.map id prod.fst) <$> (m.to_list.mmap $ λ ⟨p,v⟩, (prod.mk p ∘ prod.fst) <$> v.to_list)
+def mathlib_sha := ("https://github.com/leanprover-community/mathlib",
+                   ["019b2364cadb1dd8b30c9f13c602d61c19d3b6ea",
+                    "14e10bbda42f928bdc6f9664e8d9826e598a68fe",
+                    "257fd84fe98927ff4a5ffe044f68c4e9d235cc75",
+                    "2c84af163dbc83c6eb6a94a03d5c25f25b6b8623",
+                    "410ae5d9ec48843f0c2bf6787faafaa83c766623",
+                    "5329bf3af9ecea916d32362dc28fd391075a63a1",
+                    "58909bd424209739a2214961eefaa012fb8a18d2",
+                    "9b0fd36245ae958aeda9e10d79650801f63cd3ae",
+                    "b1920f599efe036cefbd02916aba9f687793c8c8",
+                    "d60d1616958787ccb9842dc943534f90ea0bab64"])
+
+-- #eval mathlib_sha.2.length
 
 structure package :=
 (url dir : string)
+
+def snapshots' (n : option string) (ps : list package) (ms : list leanpkg.manifest) :
+  list (ℕ × list (string × string × option string × leanpkg.manifest)) :=
+list.enum $
+do h ← match n with
+       | (some h) := pure h
+       | none     := mathlib_sha.2
+       end,
+   [ps.zip_with (λ p m, if p.url = mathlib_sha.1
+          then (p.url, p.dir, h, m)
+          else (p.url, p.dir, none, m)) ms ]
+
+
+-- list.map (prod.map id prod.fst) <$> (m.to_list.mmap $ λ ⟨p,v⟩, (prod.mk p ∘ prod.fst) <$> v.to_list)
+
+-- def snapshots (m : vmap) : list (ℕ × list (string × string)) :=
+-- list.enum $
+-- list.map (prod.map id prod.fst) <$> (m.to_list.mmap $ λ ⟨p,v⟩, (prod.mk p ∘ prod.fst) <$> v.to_list)
 
 def dir_part : list string → string
 | [] := ""
@@ -120,7 +147,32 @@ def mk_local (d : leanpkg.dependency) : leanpkg.dependency :=
          end
   .. d }
 
-def setup_snapshots : io (list string) :=
+-- #exit
+-- (xs : list package) (ys : list leanpkg.manifest) :
+def checkout_snapshot :
+  ℕ × list (string × string × option string × leanpkg.manifest) → io (string × list string)
+| (n,m) :=
+   do { let sd := sformat!"build/snapshot_{n}",
+        mkdir sd tt,
+        put_str_ln sd,
+        -- let m := rbmap.from_list m,
+        xs ← m.mmap $ λ ⟨url,dir,sha,m⟩,
+          with_cwd sd $
+          do { ex ← dir_exists dir,
+               put_str_ln dir,
+               when (¬ ex) $ git_clone url dir,
+               env.set_cwd dir,
+               match sha with
+               | some h := git_checkout_hash h
+               | none   := return ()
+               end,
+               -- put_str_ln r.url,
+               -- env.get_cwd >>= put_str_ln,
+               leanpkg.write_manifest { dependencies := m.dependencies.map mk_local .. m },
+               return sformat!"{sd}/{dir}"},
+        return (sd, xs) }
+
+def setup_snapshots (n : option string) : io (list $ string × list string) :=
 do xs ← list_packages,
    -- print xs,
    mkdir "build/root" tt,
@@ -130,42 +182,70 @@ do xs ← list_packages,
         ex ← dir_exists dir,
         when (¬ ex) $ git_clone r.url r.dir,
         leanpkg.manifest.from_file $ dir ++ "/" ++ leanpkg.leanpkg_toml_fn },
-   let zs := (ys.bind leanpkg.manifest.dependencies).foldl (flip dep_versions) (mk_rbmap _ _),
-   let s := snapshots zs,
-   ds ← s.mmap $ λ ⟨n,m⟩,
-   do { let sd := sformat!"build/snapshot_{n}",
-        mkdir sd tt,
-        do { let m := rbmap.from_list m,
-             (xs.zip ys).mmap $ λ ⟨r,y⟩,
-               with_cwd sd $
-               do ex ← dir_exists r.dir,
-                  when (¬ ex) $ git_clone r.url r.dir,
-                  env.set_cwd r.dir,
-                  match m.find r.url with
-                  | some h := git_checkout_hash h
-                  | none   := return ()
-                  end,
-                  -- put_str_ln r.url,
-                  -- env.get_cwd >>= put_str_ln,
-                  leanpkg.write_manifest { dependencies := y.dependencies.map mk_local .. y },
-                  return sformat!"{sd}/{r.dir}" } },
-   -- zs.to_list.mmap' (λ l, print l >> io.put_str_ln "\n"),
-   return ds.join
+   -- let zs := (ys.bind leanpkg.manifest.dependencies).foldl (flip dep_versions) (mk_rbmap _ _),
+   let s := snapshots' n xs ys,
+   -- let s : list (ℕ × list (string × string)) := snapshots zs,
+   -- print xs,
+   s.mmap checkout_snapshot
+   -- return ds.join,
 
-def make (s : string) : io unit :=
+def try (cmd : io unit) : io bool :=
+io.catch (tt <$ cmd) (λ _, pure ff)
+
+def make (s : string) : io bool :=
 do m ← leanpkg.manifest.from_file sformat!"{s}/{leanpkg.leanpkg_toml_fn}",
    put_str_ln s,
-   with_cwd s $ leanpkg.configure >> leanpkg.make []
-   -- cmd' { cmd := "lean", args := ["--make"] ++ m.effective_path },
-   -- cmd' { cmd := "lean", args := ["--make"] ++ m.effective_path }
+   try $ with_cwd s $ leanpkg.configure >> leanpkg.make []
+
+-- structure
+
+def build_result_file (xs : list (string × list (string × bool))) : toml.value :=
+toml.value.table $ xs.map $ prod.map id $ toml.value.table ∘ list.map (prod.map id toml.value.bool)
+
+def spawn_piped (p1 p2 : process.spawn_args) : io unit :=
+do h1 ← proc.spawn { stdout := process.stdio.piped .. p1 },
+   h2 ← proc.spawn { stdin  := process.stdio.piped .. p2 },
+   io.iterate () (λ x : unit,
+       do done ← is_eof h1.stdout,
+          if done
+            then close h2.stdin >> return none
+            else do
+              c ← read h1.stdout 1024,
+              write h2.stdin c,
+              return $ some ()),
+   wait h1, wait h2,
+   return ()
+
+def send_mail (addr subject : string) (attachment : string) : io unit :=
+do -- spawn_piped { cmd := "uuencode", args := [attachment,(split_path attachment).ilast] }
+   --             { cmd := "mail", args := ["-s",subject,addr] }
+   cmd' { cmd := "sh", args := ["send_mail.sh",attachment,(split_path attachment).ilast,subject,addr] }
+
+
+
+-- uuencode /usr/bin/xxx.c MyFile.c | mail -s "mailing my c file" youremail@yourdomain.com
+
+def list.head' {α} : list α → option α
+| [] := none
+| (x :: xs) := x
+
+def select_snapshot : io (option string) :=
+list.head' <$> cmdline_args
 
 def main : io unit :=
-do sd ← setup_snapshots,
+do n ← select_snapshot,
+   sd ← setup_snapshots n,
    -- env.set_cwd "/Users/simon/lean/lean-depot",
-   sd.mmap' make,
+   -- _,
+   s ← sd.mmap $ λ ⟨s,xs⟩, prod.mk s <$> xs.mmap (λ y, prod.mk y <$> make y),
+   leanpkg.write_file "results.toml" (repr $ build_result_file s),
    pure ()
 
 -- #eval env.set_cwd "/Users/simon/lean/lean-depot"
 -- #eval do
 --   env.set_cwd "/Users/simon/lean/lean-depot",
---   main, put_str_ln "foo"
+--   main
+
+-- #eval do
+--   env.set_cwd "/Users/simon/lean/lean-depot",
+--   send_mail "simon.hudon@gmail.com" "mail sent from Lean" "leanpkg.toml"
