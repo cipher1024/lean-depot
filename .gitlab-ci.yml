@@ -1,6 +1,3 @@
-cache:
-  paths:
-    - build/
 # test0:
 #   stage: build
 #   variables:
@@ -42,12 +39,11 @@ cache:
 #   variables:
 #     - snapshot: d60d1616958787ccb9842dc943534f90ea0bab64
 
-test0:
-  stage: build
-  variables:
-    - snapshot: "019b2364cadb1dd8b30c9f13c602d61c19d3b6ea"
-        # - "d60d1616958787ccb9842dc943534f90ea0bab64"
-  script:
+default:
+  cache:
+    paths:
+      - build/
+  before_script:
   - |
     if [ ! -d "$HOME/.elan/toolchains/" ]; then
       curl https://raw.githubusercontent.com/Kha/elan/master/elan-init.sh -sSf | sh -s -- --default-toolchain none -y
@@ -58,4 +54,10 @@ test0:
   - elan default leanprover-community/lean:nightly # 3.4.2
   - lean -v
   - leanpkg build
-  - lean --run src/check.lean $snapshot
+
+test0:
+  script:
+    - lean --run src/check.lean 019b2364cadb1dd8b30c9f13c602d61c19d3b6ea
+test1:
+  script:
+    - lean --run src/check.lean d60d1616958787ccb9842dc943534f90ea0bab64
