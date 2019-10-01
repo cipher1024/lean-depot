@@ -45,8 +45,8 @@ cache:
 test0:
   stage: build
   variables:
-    - snapshot: 019b2364cadb1dd8b30c9f13c602d61c19d3b6ea
-        # - d60d1616958787ccb9842dc943534f90ea0bab64
+    - snapshot: "019b2364cadb1dd8b30c9f13c602d61c19d3b6ea"
+        # - "d60d1616958787ccb9842dc943534f90ea0bab64"
   script:
   - |
     if [ ! -d "$HOME/.elan/toolchains/" ]; then
