@@ -1,4 +1,3 @@
-
 default:
   cache:
     paths:
@@ -20,3 +19,4 @@ default:
 test:
   script:
     - lean --run src/check.lean snapshot-2019-10
+
