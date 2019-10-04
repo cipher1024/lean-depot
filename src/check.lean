@@ -12,6 +12,12 @@ open io io.proc io.fs
 def git_checkout_hash (hash : string) : io unit :=
 io.cmd' {cmd := "git", args := ["checkout","-f","--detach",hash]}
 
+def git_checkout_tag (tag : string) : io unit :=
+io.cmd' {cmd := "git", args := ["checkout",sformat!"tags/{tag}","-f","--detach"]}
+
+def git_fetch : io unit :=
+io.cmd' { cmd := "git", args := ["fetch"] }
+
 def git_clone (repo : string) : option string → io unit
 | none :=
 do put_str_ln sformat!"clone {repo}",
@@ -99,16 +105,9 @@ def mathlib_sha := ("https://github.com/leanprover-community/mathlib",
 structure package :=
 (url dir : string)
 
-def snapshots' (n : option string) (ps : list package) (ms : list leanpkg.manifest) :
-  list (ℕ × list (string × string × option string × leanpkg.manifest)) :=
-list.enum $
-do h ← match n with
-       | (some h) := pure h
-       | none     := mathlib_sha.2
-       end,
-   [ps.zip_with (λ p m, if p.url = mathlib_sha.1
-          then (p.url, p.dir, h, m)
-          else (p.url, p.dir, none, m)) ms ]
+def snapshots' (n : string) (ps : list package) (ms : list leanpkg.manifest) :
+  (string × list (string × string × leanpkg.manifest)) :=
+(n, ps.zip_with (λ p m, (p.url, p.dir, m)) ms)
 
 
 -- list.map (prod.map id prod.fst) <$> (m.to_list.mmap $ λ ⟨p,v⟩, (prod.mk p ∘ prod.fst) <$> v.to_list)
@@ -143,37 +142,37 @@ do d' ← env.get_cwd,
 def mk_local (d : leanpkg.dependency) : leanpkg.dependency :=
 { src := match d.src with
          | (path p) := path p
-         | (git u c b) := path $ "../../" ++ dir_part (split_path u)
+         | (git u c b) := path $ "../../" ++ dir_part (split_path $ canonicalize_url u)
          end
   .. d }
 
 -- #exit
 -- (xs : list package) (ys : list leanpkg.manifest) :
 def checkout_snapshot :
-  ℕ × list (string × string × option string × leanpkg.manifest) →
+  string × list (string × string × leanpkg.manifest) →
   io (string × list string)
-| (n,m) :=
-   do { let sd := sformat!"build/snapshot_{n}",
+| (tag,m) :=
+   do { let sd := sformat!"build/{tag}",
         mkdir sd tt,
         put_str_ln sd,
         -- let m := rbmap.from_list m,
-        xs ← m.mmap $ λ ⟨url,dir,sha,m⟩,
+        xs ← m.mmap $ λ ⟨url,dir,(m : leanpkg.manifest)⟩,
           with_cwd sd $
           do { ex ← dir_exists dir,
                put_str_ln dir,
                when (¬ ex) $ git_clone url dir,
+               git_fetch,
                env.set_cwd dir,
-               match sha with
-               | some h := git_checkout_hash h
-               | none   := return ()
-               end,
+               catch (git_checkout_tag tag) (λ _ : io.error, (return () : io unit)),
                -- put_str_ln r.url,
                -- env.get_cwd >>= put_str_ln,
-               leanpkg.write_manifest { dependencies := m.dependencies.map mk_local .. m },
+               leanpkg.write_manifest
+                 { dependencies := m.dependencies.map mk_local,
+                   lean_version := "3.4.2", .. m },
                return sformat!"{sd}/{dir}"},
         return (sd, xs) }
 
-def setup_snapshots (n : option string) : io (list $ string × list string) :=
+def setup_snapshots (n : string) : io (string × list string) :=
 do xs ← list_packages,
    -- print xs,
    mkdir "build/root" tt,
@@ -187,17 +186,18 @@ do xs ← list_packages,
    let s := snapshots' n xs ys,
    -- let s : list (ℕ × list (string × string)) := snapshots zs,
    -- print xs,
-   s.mmap checkout_snapshot
+   checkout_snapshot s
    -- return ds.join,
 
 def try (cmd : io unit) : io bool :=
 io.catch (tt <$ cmd) (λ _, pure ff)
 
 def make (s : string) : io bool :=
-do put_str_ln s,
+do put_str_ln sformat!">> build: {s}",
    env.get_cwd >>= put_str_ln,
    m ← leanpkg.manifest.from_file sformat!"{s}/{leanpkg.leanpkg_toml_fn}",
-   try $ with_cwd s $ leanpkg.configure >> leanpkg.make []
+   try $ with_cwd s $ do
+     leanpkg.configure >> leanpkg.make []
 
 def build_result_file (xs : list (string × list (string × bool))) : toml.value :=
 toml.value.table $ xs.map $ prod.map id $ toml.value.table ∘ list.map (prod.map id toml.value.bool)
@@ -233,12 +233,13 @@ def select_snapshot : io (option string) :=
 list.head' <$> cmdline_args
 
 def main : io unit :=
-do n ← select_snapshot,
-   sd ← setup_snapshots n,
+do -- cmd' { cmd := "elan", args := ["default","3.4.2"] },
+   [n] ← cmdline_args | put_str_ln "usage: check [tag]",
+   (s,xs) ← setup_snapshots n,
    -- env.set_cwd "/Users/simon/lean/lean-depot",
    -- _,
-   s ← sd.mmap $ λ ⟨s,xs⟩, prod.mk s <$> xs.mmap (λ y, prod.mk y <$> make y),
-   leanpkg.write_file "results.toml" (repr $ build_result_file s),
+   s ← prod.mk s <$> xs.mmap (λ y, prod.mk y <$> make y),
+   leanpkg.write_file "results.toml" (repr $ build_result_file [s]),
    cmd' { cmd := "cat", args := ["results.toml"] },
    pure ()
 

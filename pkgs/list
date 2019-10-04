@@ -1,13 +1,16 @@
 https://github.com/leanprover-community/mathlib
-https://github.com/cipher1024/lean-pl
--- https://github.com/unitb/lean-lib
+https://github.com/leanprover-community/mathlib-nursery
+-- https://github.com/cipher1024/lean-pl
+https://github.com/rwbarton/lean-homotopy-theory
+https://github.com/avigad/qpf
+-- https://github.com/lean-forward/cap_set_problem
+-- https://github.com/johoelzl/mason-stother
+https://github.com/unitb/lean-lib
 -- https://github.com/unitb/temporal-logic
 -- https://github.com/unitb/unitb-semantics
-https://github.com/digama0/vc0
-https://github.com/ramonfmir/lean-scheme
-https://github.com/kbuzzard/lean-stacks-project
-https://github.com/rwbarton/lean-homotopy-theory
-https://github.com/johoelzl/mason-stother
-https://github.com/NeilStrickland/lean_lib
-https://github.com/avigad/qpf
-https://github.com/lean-forward/cap_set_problem
+-- https://github.com/digama0/vc0
+https://github.com/leanprover-community/lean-perfectoid-spaces
+-- tried and failed
+-- https://github.com/NeilStrickland/lean_lib
+-- https://github.com/kbuzzard/lean-stacks-project
+-- https://github.com/ramonfmir/lean-scheme

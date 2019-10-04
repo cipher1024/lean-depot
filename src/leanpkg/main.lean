@@ -39,19 +39,24 @@ assg ← solve_deps d,
 path_file_cnts ← mk_path_file <$> construct_path assg,
 write_file "leanpkg.path" path_file_cnts
 
-def make (lean_args : list string) : io unit := do
-manifest ← read_manifest,
+def call_lean (manifest : leanpkg.manifest) (args : list string) : io unit := do
 exec_cmd {
-  cmd := "lean",
-  args := (match manifest.timeout with some t := ["-T", repr t] | none := [] end) ++
-    ["--make"] ++ manifest.effective_path ++ lean_args,
+  cmd := "elan",
+  args := "run" :: manifest.lean_version :: "lean" :: args,
   env := [("LEAN_PATH", none)]
 }
 
+
+def make (lean_args : list string) : io unit := do
+manifest ← read_manifest,
+let t_out := match manifest.timeout with some t := ["-T", repr t] | none := [] end,
+call_lean manifest $ t_out ++ ["--make"] ++ manifest.effective_path ++ lean_args
+
 def build (lean_args : list string) := configure >> make lean_args
 
-def make_test (lean_args : list string) : io unit :=
-exec_cmd { cmd := "lean", args := ["--make", "test"] ++ lean_args, env := [("LEAN_PATH", none)] }
+def make_test (lean_args : list string) : io unit := do
+manifest ← read_manifest,
+call_lean manifest $ ["--make", "test"] ++ lean_args
 
 def test (lean_args : list string) := build lean_args >> make_test lean_args
 
