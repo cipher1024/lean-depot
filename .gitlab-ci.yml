@@ -1,7 +1,8 @@
 default:
-  cache:
+  timeout: 600 # timeout in minutes
+  artifacts:
     paths:
-      - build/
+      - .
   before_script:
   - |
     if [ ! -d "$HOME/.elan/toolchains/" ]; then
