@@ -17,6 +17,10 @@ default:
   - lean -v
   - leanpkg build
 
+stages:
+  - mathlib
+  - build
+
 mathlib:
   stage: mathlib
   artifacts:
