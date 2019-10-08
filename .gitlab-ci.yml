@@ -1,5 +1,5 @@
 default:
-  timeout: 600 # timeout in minutes
+  # timeout: 600 # timeout in minutes
   artifacts:
     paths:
       - .
