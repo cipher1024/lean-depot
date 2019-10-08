@@ -1,8 +1,5 @@
 default:
   # timeout: 600 # timeout in minutes
-  artifacts:
-    paths:
-      - .
   before_script:
   - |
     if [ ! -d "$HOME/.elan/toolchains/" ]; then
@@ -18,5 +15,8 @@ default:
   - leanpkg build
 
 test:
+  artifacts:
+    paths:
+      - .
   script:
     - lean --run src/check.lean snapshot-2019-10
