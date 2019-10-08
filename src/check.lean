@@ -242,7 +242,7 @@ def list.head' {α} : list α → option α
 def select_snapshot : io (option string) :=
 list.head' <$> cmdline_args
 
-def parse_args : io cmdline_args :=
+def parse_args : io app_args :=
 do n :: xs ← cmdline_args | usage,
    b ← match xs with
        | ["--mathlib"] := pure tt
