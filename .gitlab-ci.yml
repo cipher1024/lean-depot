@@ -1,5 +1,8 @@
 default:
   # timeout: 600 # timeout in minutes
+  cache:
+    paths:
+      - .
   before_script:
   - |
     if [ ! -d "$HOME/.elan/toolchains/" ]; then
@@ -14,7 +17,16 @@ default:
   - lean -v
   - leanpkg build
 
+mathlib:
+  stage: mathlib
+  artifacts:
+    paths:
+      - .
+  script:
+    - lean --run src/check.lean snapshot-2019-10 --mathlib
+
 test:
+  stage: build
   artifacts:
     paths:
       - .

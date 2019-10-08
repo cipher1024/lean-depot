@@ -105,9 +105,16 @@ def mathlib_sha := ("https://github.com/leanprover-community/mathlib",
 structure package :=
 (url dir : string)
 
-def snapshots' (n : string) (ps : list package) (ms : list leanpkg.manifest) :
+structure app_args :=
+(tag : string)
+(mathlib : bool)
+
+def usage {α} : io α :=
+io.fail "usage: check TAG [--mathlib]"
+
+def snapshots' (args : app_args) (ps : list package) (ms : list leanpkg.manifest) :
   (string × list (string × string × leanpkg.manifest)) :=
-(n, ps.zip_with (λ p m, (p.url, p.dir, m)) ms)
+(args.tag, ps.zip_with (λ p m, (p.url, p.dir, m)) ms)
 
 
 -- list.map (prod.map id prod.fst) <$> (m.to_list.mmap $ λ ⟨p,v⟩, (prod.mk p ∘ prod.fst) <$> v.to_list)
@@ -172,16 +179,19 @@ def checkout_snapshot :
                return sformat!"{sd}/{dir}"},
         return (sd, xs) }
 
-def setup_snapshots (n : string) : io (string × list string) :=
+def setup_snapshots (n : app_args) : io (string × list string) :=
 do xs ← list_packages,
    -- print xs,
    mkdir "build/root" tt,
    ys ← with_cwd "build/root" $
-      xs.mmap $ λ r, do {
-        let dir := r.dir,
-        ex ← dir_exists dir,
-        when (¬ ex) $ git_clone r.url r.dir,
-        leanpkg.manifest.from_file $ dir ++ "/" ++ leanpkg.leanpkg_toml_fn },
+   do { let xs := if n.mathlib
+                     then xs.filter $ λ p, p.dir = "leanprover-community/mathlib"
+                     else xs,
+        xs.mmap $ λ r, do {
+          let dir := r.dir,
+          ex ← dir_exists dir,
+          when (¬ ex) $ git_clone r.url r.dir,
+          leanpkg.manifest.from_file $ dir ++ "/" ++ leanpkg.leanpkg_toml_fn } },
    -- let zs := (ys.bind leanpkg.manifest.dependencies).foldl (flip dep_versions) (mk_rbmap _ _),
    let s := snapshots' n xs ys,
    -- let s : list (ℕ × list (string × string)) := snapshots zs,
@@ -232,10 +242,19 @@ def list.head' {α} : list α → option α
 def select_snapshot : io (option string) :=
 list.head' <$> cmdline_args
 
+def parse_args : io cmdline_args :=
+do n :: xs ← cmdline_args | usage,
+   b ← match xs with
+       | ["--mathlib"] := pure tt
+       | [] := pure ff
+       | _ := usage
+       end,
+   pure { tag := n, mathlib := b }
+
 def main : io unit :=
 do -- cmd' { cmd := "elan", args := ["default","3.4.2"] },
-   [n] ← cmdline_args | put_str_ln "usage: check [tag]",
-   (s,xs) ← setup_snapshots n,
+   args ← parse_args,
+   (s,xs) ← setup_snapshots args,
    -- env.set_cwd "/Users/simon/lean/lean-depot",
    -- _,
    s ← prod.mk s <$> xs.mmap (λ y, prod.mk y <$> make y),
