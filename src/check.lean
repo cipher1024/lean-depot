@@ -18,6 +18,27 @@ io.cmd' {cmd := "git", args := ["checkout",sformat!"tags/{tag}","-f","--detach"]
 def git_fetch : io unit :=
 io.cmd' { cmd := "git", args := ["fetch"] }
 
+def string.is_prefix_of_aux : string.iterator → string.iterator → ℕ → bool
+| i j 0 := tt
+| i j (nat.succ n) :=
+  i.curr = j.curr ∧ string.is_prefix_of_aux i.next j.next n
+
+def string.is_prefix_of (x y : string) : bool :=
+x.length ≤ y.length ∧ string.is_prefix_of_aux x.mk_iterator y.mk_iterator x.length
+
+def string.drop (x : string) (n : ℕ) : string :=
+(x.mk_iterator.nextn n).next_to_string
+
+def string.replace_prefix (x y z : string) : string :=
+if y.is_prefix_of x
+  then z ++ x.drop y.length
+  else x
+
+def add_token (repo : string) : io string :=
+do some s ← io.env.get "GITHUB_TOKEN" | pure repo,
+   return $ (repo.replace_prefix "https://github.com" (sformat!"https://{s}@github.com"))
+                 .replace_prefix "https://www.github.com" (sformat!"https://{s}@www.github.com")
+
 def git_clone (repo : string) : option string → io unit
 | none :=
 do put_str_ln sformat!"clone {repo}",
@@ -128,14 +149,6 @@ def dir_part : list string → string
 | [x] := x
 | [x,y] := sformat!"{x}/{y}"
 | (x :: xs) := dir_part xs
-
-def string.is_prefix_of_aux : string.iterator → string.iterator → ℕ → bool
-| i j 0 := tt
-| i j (nat.succ n) :=
-  i.curr = j.curr ∧ string.is_prefix_of_aux i.next j.next n
-
-def string.is_prefix_of (x y : string) : bool :=
-x.length ≤ y.length ∧ string.is_prefix_of_aux x.mk_iterator y.mk_iterator x.length
 
 def list_packages : io (list package) :=
 do xs <- read_lines "pkgs/list",

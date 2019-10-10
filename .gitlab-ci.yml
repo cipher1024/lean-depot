@@ -25,7 +25,7 @@ mathlib:
   stage: mathlib
   artifacts:
     paths:
-      - .
+      - build/snapshot-*/*/*/src
   script:
     - timeout 10200 lean --run src/check.lean snapshot-2019-10 --mathlib | python scripts/detect_errors.py
 
@@ -33,6 +33,6 @@ test:
   stage: build
   artifacts:
     paths:
-      - .
+      - build/snapshot-*/*/*/src
   script:
     - lean --run src/check.lean snapshot-2019-10
