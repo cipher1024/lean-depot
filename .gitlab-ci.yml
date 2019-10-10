@@ -2,7 +2,7 @@ default:
   # timeout: 600 # timeout in minutes
   cache:
     paths:
-      - .
+      - build/snapshot-*/*/*/src
   before_script:
   - |
     if [ ! -d "$HOME/.elan/toolchains/" ]; then
