@@ -1,15 +1,21 @@
 default:
   # timeout: 600 # timeout in minutes
+  # except:
+  #   - schedules
   cache:
     paths:
       - build/snapshot-*/*/*/src
       - build/snapshot-lean-3.4.2--2019-10/snapshot.toml
       - build/snapshot-lean-3.4.2--2019-10/failure.toml
+      - snapshot/
+  variables:
+    LEAN_VERSION: "3.4.2"
   before_script:
   - |
     if [ ! -d "$HOME/.elan/toolchains/" ]; then
       curl https://raw.githubusercontent.com/Kha/elan/master/elan-init.sh -sSf | sh -s -- --default-toolchain none -y
     fi
+  - TAG=snapshot-`date -u "+%Y-%m"`
   - source ~/.elan/env
   - elan toolchain install leanprover-community/lean:nightly
   - elan toolchain install 3.4.2
@@ -18,12 +24,18 @@ default:
   - elan default leanprover-community/lean:nightly # 3.4.2
   - lean -v
   - leanpkg build
+  - git clone --single-branch --branch snapshot https://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot snapshot
+  - mkdir -p snapshot/3.4.2
+  - mkdir -p snapshot/3.5.0
+  - mkdir -p snapshot/lean-nightly
 
 stages:
   - mathlib
   - build
 
 mathlib:
+  except:
+    - schedules
   stage: mathlib
   artifacts:
     paths:
@@ -31,29 +43,49 @@ mathlib:
       - build/snapshot-lean-3.4.2--2019-10/snapshot.toml
       - build/snapshot-lean-3.4.2--2019-10/failure.toml
   script:
-    - lean --run src/check.lean
-    - cp scripts/detect_errors.py build/snapshot-lean-3.4.2--2019-10
-    - cd build/snapshot-lean-3.4.2--2019-10
+    - lean --run src/check.lean --make-file
+    - cp scripts/detect_errors.py build/snapshot-lean-$LEAN_VERSION snapshot-lean-$LEAN_VERSION
+    - cd build/snapshot-lean-$LEAN_VERSION
     - timeout 10200 make | python detect_errors.py
     # - timeout 10200 lean --run src/check.lean snapshot-2019-10 --mathlib | python scripts/detect_errors.py
 
 test:
+  except:
+    - schedules
   stage: build
   artifacts:
     paths:
       - build/snapshot-*/*/*/src
-      - build/snapshot-lean-3.4.2--2019-10/snapshot.toml
-      - build/snapshot-lean-3.4.2--2019-10/failure.toml
+      - build/snapshot-lean-$LEAN_VERSION/snapshot.toml
+      - build/snapshot-lean-$LEAN_VERSION/failure.toml
   script:
     # - lean --run src/check.lean snapshot-2019-10
-    - lean --run src/check.lean
-    - cd build/snapshot-lean-3.4.2--2019-10
+    - lean --run src/check.lean --make-file $LEAN_VERSION snapshot-lean-$LEAN_VERSION
+    - cd build/snapshot-lean-$LEAN_VERSION
     - make || true
     - cd ../..
-    - git clone --single-branch --branch snapshot http://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot snapshot
-    - mkdir -p snapshot/3.4.2
-    - cp build/snapshot-lean-3.4.2--2019-10/snapshot.toml  build/snapshot-lean-3.4.2--2019-10/failure.toml snapshot/3.4.2/
+    - cp build/snapshot-lean-$LEAN_VERSION/snapshot.toml  build/snapshot-lean-$LEAN_VERSION/failure.toml snapshot/$LEAN_VERSION/
     - cd snapshot
-    - git add 3.4.2/snapshot.toml 3.4.2/failure.toml
-    - git commit -m "new"
-    - git push origin snapshot
+    - git add $LEAN_VERSION/snapshot.toml $LEAN_VERSION/failure.toml
+    - git commit -m "new" || true
+    - git push origin snapshot || true
+
+release:
+  only:
+    - schedules
+  script:
+    - git checkout snapshot
+    - git remote add release https://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot
+    - git fetch release --tags
+    - git tag $TAG
+    - git push release tag $TAG
+
+bump:
+  only:
+    - schedules
+  script:
+    - lean --run src/check.lean --update
+    - git remote add release https://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot
+    - git add pkgs/*.toml
+    - git commit -m "new-snapshot" || true
+    - git push release master || true

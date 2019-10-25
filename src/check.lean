@@ -12,6 +12,9 @@ open io io.proc io.fs
 def git_checkout_hash (hash : string) : io unit :=
 io.cmd' {cmd := "git", args := ["checkout","-f","--detach",hash]}
 
+def git_pull_master : io unit :=
+io.cmd' {cmd := "git", args := ["checkout","pull","-f","origin","master"]}
+
 def git_checkout_tag (tag : string) : io unit :=
 io.cmd' {cmd := "git", args := ["checkout",sformat!"tags/{tag}","-f","--detach"]}
 
@@ -144,10 +147,10 @@ instance : has_to_string package :=
 structure app_args :=
 (tag : string)
 (lean_version : string)
-(mathlib : bool)
+-- (mathlib : bool)
 
 def usage {α} : io α :=
-io.fail "usage: check TAG [--mathlib]"
+io.fail "usage: check (--makefile LEAN_VERSION TAG | --update)"
 
 -- def snapshots' (args : app_args) (ps : list package) (ms : list leanpkg.manifest) :
 --   (string × list (string × string × leanpkg.manifest)) :=
@@ -307,7 +310,7 @@ def mk_local (d : leanpkg.dependency) : leanpkg.dependency :=
 --                return sformat!"{sd}/{dir}"},
 --         return (sd, xs) }
 -- #exit
-def update_package_desc (args : app_args) :
+def update_package_desc :
   list (package × leanpkg.manifest) → io unit | ps :=
 ps.mmap' $ λ p, rewrite_package_file p.1
 
@@ -361,7 +364,7 @@ do let m : rbmap string (package × leanpkg.manifest) :=
           -- put_str_ln sformat!"{deps}",
           let header := sformat!"{p.1.dir}.pkg: init {\" \".intercalate deps}\n\n",
           let echo := sformat!"echo \"{p.1.name} = \\\"{sha}\\\"\"",
-          let cmds   := sformat!"\tcd {p.1.dir} && leanpkg test || ({echo} >> ../../failure.toml && false)\n\t{echo} >> ../../snapshot.toml || \n\n",
+          let cmds   := sformat!"\tcd {p.1.dir} && leanpkg test || ({echo} >> ../../failure.toml && false)\n\t{echo} >> snapshot.toml\n\n",
           write h (header ++ cmds).to_char_buffer },
    close h
 
@@ -370,10 +373,7 @@ do xs ← list_packages',
    -- print xs,
    mkdir "build/root" tt,
    ys ← with_cwd "build/root" $
-   do { let xs := if n.mathlib
-                     then xs.filter $ λ p, p.dir = "leanprover-community/mathlib"
-                     else xs,
-        xs.mmap $ λ r, do {
+   do { xs.mmap $ λ r, do {
           let dir := r.dir,
           ex ← dir_exists dir,
           when (¬ ex) $ git_clone r.url r.dir,
@@ -381,12 +381,12 @@ do xs ← list_packages',
             then do c ← leanpkg.git_head_revision r.dir,
                     pure { commit := c, .. r }
             else pure r,
-           prod.mk r <$> leanpkg.manifest.from_file (dir ++ "/" ++ leanpkg.leanpkg_toml_fn) } },
+          prod.mk r <$> leanpkg.manifest.from_file (dir ++ "/" ++ leanpkg.leanpkg_toml_fn) } },
    -- let zs := (ys.bind leanpkg.manifest.dependencies).foldl (flip dep_versions) (mk_rbmap _ _),
    -- let s := snapshots' n xs ys,
    -- let s : list (ℕ × list (string × string)) := snapshots zs,
    -- xs.mmap' $ io.put_str_ln ∘ to_string,
-   update_package_desc n ys,
+   update_package_desc ys,
    dir ← checkout_snapshot' n ys,
    write_Makefile dir ys,
    pure ()
@@ -435,18 +435,35 @@ def list.head' {α} : list α → option α
 def select_snapshot : io (option string) :=
 list.head' <$> cmdline_args
 
-def parse_args : io app_args :=
-do n :: xs ← cmdline_args | usage,
-   b ← match xs with
-       | ["--mathlib"] := pure tt
-       | [] := pure ff
+def parse_args : io (option app_args) :=
+do xs ← cmdline_args | usage,
+   match xs with
+       | ["--makefile",vers,tag] := pure (some { tag := tag, lean_version := vers })
+       | ["--update"] := pure none
        | _ := usage
-       end,
-   pure { tag := n, mathlib := b, lean_version := "3.4.2" }
+       end
+
+def update_pkgs : io unit :=
+do xs ← list_packages',
+   -- print xs,
+   mkdir "build/root" tt,
+   let xs := xs.filter $ λ p, p.update,
+   ys ← with_cwd "build/root" $
+   do { xs.mmap $ λ r, do {
+        let dir := r.dir,
+        ex ← dir_exists dir,
+        if ¬ ex
+          then git_clone r.url r.dir
+          else git_pull_master,
+        c ← leanpkg.git_head_revision r.dir,
+        let r := { commit := c, .. r },
+        prod.mk r <$> leanpkg.manifest.from_file (dir ++ "/" ++ leanpkg.leanpkg_toml_fn) } },
+   update_package_desc ys,
+   return ()
 
 def main : io unit :=
-do
-   setup_snapshots { mathlib := ff, tag := "snapshot-lean-3.4.2--2019-10", lean_version := "3.4.2" },
+do some opt ← parse_args | update_pkgs,
+   setup_snapshots opt,
    -- mkdir "snapshot" tt,
    -- let snap_name := "snapshot-lean-3.4.2--2019-10",
    -- io.cmd { cmd := "git",args := ["clone", "--single-branch", "--branch", "snapshot", "http://gitlab.com/simon.hudon/lean-depot", "snapshot"] },
