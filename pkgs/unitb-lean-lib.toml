@@ -1,0 +1,4 @@
+[package]
+url = "https://github.com/unitb/lean-lib"
+auto_update = true
+commit = "a216c7271945444d49f94e105d7e4a438b4564ef"

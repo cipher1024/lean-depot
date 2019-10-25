@@ -1,0 +1,4 @@
+[package]
+url = "https://github.com/flypitch/flypitch"
+auto_update = true
+commit = "c9f22eeab9ff3083020976f981c62d5bdc698958"

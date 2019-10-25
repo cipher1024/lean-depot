@@ -47,6 +47,10 @@ do put_str_ln sformat!"clone {repo}",
 do put_str_ln sformat!"clone {repo}",
    io.cmd' { cmd := "git", args := ["clone",repo,dir] }
 
+def list_dir (dir : string) : io (list string) :=
+do ls ← (list.filter (≠ "") ∘ string.split (= '\n')) <$> io.cmd { cmd := "ls", args := [dir] },
+   return $ ls.map $ λ fn, sformat!"{dir}/{fn}"
+
 def read_lines (fn : string) : io (list string) :=
 do h ← mk_file_handle fn io.mode.read ff,
    r ← iterate [] $ λ r,
@@ -124,18 +128,30 @@ def mathlib_sha := ("https://github.com/leanprover-community/mathlib",
 -- #eval mathlib_sha.2.length
 
 structure package :=
-(url dir : string)
+(config_file url dir : string)
+(commit : option string)
+(update : bool)
+(author : option string )
+(left_over     : list (string × toml.value))
+-- (pkg_left_over : list (string × toml.value))
+
+
+
+instance : has_to_string package :=
+{ to_string := λ p,
+  sformat!"{{ config_file := {repr p.config_file},\n  url := {repr p.url},\n  dir := {repr p.dir},\n  commit := {repr p.commit},\n  update := {p.update},\n  author := {p.author} }" }
 
 structure app_args :=
 (tag : string)
+(lean_version : string)
 (mathlib : bool)
 
 def usage {α} : io α :=
 io.fail "usage: check TAG [--mathlib]"
 
-def snapshots' (args : app_args) (ps : list package) (ms : list leanpkg.manifest) :
-  (string × list (string × string × leanpkg.manifest)) :=
-(args.tag, ps.zip_with (λ p m, (p.url, p.dir, m)) ms)
+-- def snapshots' (args : app_args) (ps : list package) (ms : list leanpkg.manifest) :
+--   (string × list (string × string × leanpkg.manifest)) :=
+-- (args.tag, ps.zip_with (λ p m, (p.url, p.dir, m)) ms)
 
 
 -- list.map (prod.map id prod.fst) <$> (m.to_list.mmap $ λ ⟨p,v⟩, (prod.mk p ∘ prod.fst) <$> v.to_list)
@@ -150,10 +166,109 @@ def dir_part : list string → string
 | [x,y] := sformat!"{x}/{y}"
 | (x :: xs) := dir_part xs
 
-def list_packages : io (list package) :=
-do xs <- read_lines "pkgs/list",
-   let xs := ((xs.filter (≠ "")).map trim).filter (λ s, ¬ string.is_prefix_of "--" s),
-   return $ xs.map $ λ d, ⟨d,dir_part (split_path d)⟩
+-- def list_packages : io (list package) :=
+-- do xs <- read_lines "pkgs/list",
+--    let xs := ((xs.filter (≠ "")).map trim).filter (λ s, ¬ string.is_prefix_of "--" s),
+--    return $ xs.map $ λ d, ⟨d,dir_part (split_path d),none⟩
+
+def split_ext : string → list string := string.split (= '.')
+
+def package.name (p : package) : string :=
+".".intercalate (split_ext (split_path p.config_file).ilast).init
+
+def parse_file (fn : string) : io toml.value :=
+do cnts ← io.fs.read_file fn,
+   match parser.run toml.File cnts with
+  | sum.inl err :=
+    io.fail $ "toml parse error in " ++ fn ++ "\n\n" ++ err
+  | sum.inr res := return res
+   end
+
+def split_off : toml.value → string → option (toml.value × list (string × toml.value))
+| (toml.value.table cs) k :=
+  match cs.partition (λ c : string × toml.value, c.fst = k) with
+  | ([],_) := none
+  | ((k,v) ::_, xs) := some (v,xs)
+  end
+| _ _ := none
+
+class is_toml_value (α : Type*) :=
+(read_toml : toml.value → option α)
+
+export is_toml_value (read_toml)
+
+instance : is_toml_value string :=
+{ read_toml := λ v, match v with
+                    | (toml.value.str s) := some s
+                    | _ := none
+                    end }
+
+instance : is_toml_value bool :=
+{ read_toml := λ v, match v with
+                    | (toml.value.bool s) := some s
+                    | _ := none
+                    end }
+
+def lookup_toml (α) [is_toml_value α] (v : toml.value) (key : string) : option α :=
+v.lookup key >>= read_toml _
+
+def lookup_optional_toml (α) [is_toml_value α] (v : toml.value) (key : string) : option (option α) :=
+match v.lookup key with
+| (some v) := some <$> read_toml _ v
+| none := some none
+end
+
+def split_off' (α) [is_toml_value α] (v : toml.value) (key : string) : option (α × toml.value) :=
+split_off v key >>= λ ⟨v,xs⟩,
+prod.mk <$> read_toml _ v <*> pure (toml.value.table xs)
+
+def split_off_optional (α) [is_toml_value α] (v : toml.value) (key : string) : option (option α × toml.value) :=
+match split_off v key with
+| (some (v,xs)) := prod.mk <$> (some <$> read_toml _ v) <*> pure (toml.value.table xs)
+| none := some (none,v)
+end
+
+def package.to_toml (p : package) : toml.value :=
+toml.value.table $
+let sha := match p.commit with
+           | some sha := [("commit",toml.value.str sha)]
+           | none := []
+           end,
+    author := match p.author with
+           | some sha := [("author",toml.value.str sha)]
+           | none := []
+           end in
+("package", toml.value.table $
+  [ ("url", toml.value.str p.url),
+    ("auto_update", toml.value.bool p.update) ]
+  ++ sha ++ author ) :: p.left_over
+
+def package.from_toml (fn : string) (t : toml.value) : option package :=
+do (pkg,xs) ← split_off t "package",
+   url    ← lookup_toml string pkg "url",
+   update ← lookup_toml bool   pkg "auto_update",
+   commit ← lookup_optional_toml string pkg "commit",
+   author ← lookup_optional_toml string pkg "author",
+   pure { config_file := fn, url := url,
+          update := update,
+          commit := commit, left_over := xs,
+          author := author,
+          dir := dir_part (split_path url) }
+
+def parse_package_file (fn : string) : io package :=
+do val ← parse_file fn,
+   some pkg ← pure $ package.from_toml fn val | io.fail sformat!"invalid file format for {fn}",
+   pure pkg
+
+def rewrite_package_file (fn : package) : io unit :=
+leanpkg.write_file fn.config_file (repr fn.to_toml)
+
+-- #eval parse_package_file "pkgs/mathlib.toml" >>= print
+
+def list_packages' : io (list package) :=
+do xs <- list_dir "pkgs",
+   let xs := xs.filter $ λ fn, (split_ext fn).ilast = "toml",
+   xs.mmap parse_package_file
 
 def with_cwd {α} (d : string) (m : io α) : io α :=
 do d' ← env.get_cwd,
@@ -168,32 +283,90 @@ def mk_local (d : leanpkg.dependency) : leanpkg.dependency :=
 
 -- #exit
 -- (xs : list package) (ys : list leanpkg.manifest) :
-def checkout_snapshot :
-  string × list (string × string × leanpkg.manifest) →
-  io (string × list string)
-| (tag,m) :=
-   do { let sd := sformat!"build/{tag}",
+-- def checkout_snapshot :
+--   string × list (string × string × leanpkg.manifest) →
+--   io (string × list string)
+-- | (tag,m) :=
+--    do { let sd := sformat!"build/{tag}",
+--         mkdir sd tt,
+--         put_str_ln sd,
+--         -- let m := rbmap.from_list m,
+--         xs ← m.mmap $ λ ⟨url,dir,(m : leanpkg.manifest)⟩,
+--           with_cwd sd $
+--           do { ex ← dir_exists dir,
+--                put_str_ln dir,
+--                when (¬ ex) $ git_clone url dir,
+--                git_fetch,
+--                env.set_cwd dir,
+--                catch (git_checkout_tag tag) (λ _ : io.error, (return () : io unit)),
+--                -- put_str_ln r.url,
+--                -- env.get_cwd >>= put_str_ln,
+--                leanpkg.write_manifest
+--                  { dependencies := m.dependencies.map mk_local,
+--                    lean_version := "3.4.2", .. m },
+--                return sformat!"{sd}/{dir}"},
+--         return (sd, xs) }
+-- #exit
+def update_package_desc (args : app_args) :
+  list (package × leanpkg.manifest) → io unit | ps :=
+ps.mmap' $ λ p, rewrite_package_file p.1
+
+def checkout_snapshot' (args : app_args) :
+  list (package × leanpkg.manifest) →
+  io (string)
+| ps :=
+   do { let sd := sformat!"build/{args.tag}",
         mkdir sd tt,
         put_str_ln sd,
         -- let m := rbmap.from_list m,
-        xs ← m.mmap $ λ ⟨url,dir,(m : leanpkg.manifest)⟩,
+        ps.mmap' $ λ ⟨p,(m : leanpkg.manifest)⟩,
           with_cwd sd $
-          do { ex ← dir_exists dir,
+          do { let dir := p.dir,
+               ex ← dir_exists dir,
                put_str_ln dir,
-               when (¬ ex) $ git_clone url dir,
+               when (¬ ex) $ git_clone p.url dir,
                git_fetch,
                env.set_cwd dir,
-               catch (git_checkout_tag tag) (λ _ : io.error, (return () : io unit)),
+               match p.commit with
+               | some sha := git_checkout_hash sha
+               | none     := catch (git_checkout_tag args.tag) (λ _ : io.error, (return () : io unit))
+               end,
                -- put_str_ln r.url,
                -- env.get_cwd >>= put_str_ln,
                leanpkg.write_manifest
                  { dependencies := m.dependencies.map mk_local,
-                   lean_version := "3.4.2", .. m },
+                   lean_version := args.lean_version, .. m },
                return sformat!"{sd}/{dir}"},
-        return (sd, xs) }
+        return (sd) }
 
-def setup_snapshots (n : app_args) : io (string × list string) :=
-do xs ← list_packages,
+def dep_to_target_name (m : rbmap string (package × leanpkg.manifest)) : leanpkg.dependency → option string
+| { src := (leanpkg.source.git url _ _), .. } := m.find (canonicalize_url url) >>= λ ⟨p,_⟩, some sformat!"{p.dir}.pkg"
+| { src := (leanpkg.source.path _), .. } := none
+
+-- #exit
+def write_Makefile (dir : string) (ps : list $ package × leanpkg.manifest) : io unit :=
+with_cwd dir $
+do let m : rbmap string (package × leanpkg.manifest) :=
+           rbmap.from_list (ps.map $ λ ⟨p,q⟩, (p.url, p, q)) ,
+   h ← mk_file_handle "Makefile" mode.write,
+   let deps := ps.map $ λ p, sformat!"{p.1.dir}.pkg",
+
+   let all_tgt := sformat!"all: {\" \".intercalate deps}\n\n",
+   let init_tgt := sformat!"init:\n\techo [snapshot] > snapshot.toml\n\techo [failure] > failure.toml\n\n",
+   write h (all_tgt ++ init_tgt).to_char_buffer,
+   ps.mmap' $ λ p,
+     do { some sha ← pure p.1.commit | pure (),
+          let deps := p.2.dependencies.filter_map $ dep_to_target_name m,
+          -- put_str_ln sformat!"{repr p.2}",
+          -- put_str_ln sformat!"{deps}",
+          let header := sformat!"{p.1.dir}.pkg: init {\" \".intercalate deps}\n\n",
+          let echo := sformat!"echo \"{p.1.name} = \\\"{sha}\\\"\"",
+          let cmds   := sformat!"\tcd {p.1.dir} && leanpkg test || ({echo} >> ../../failure.toml && false)\n\t{echo} >> ../../snapshot.toml || \n\n",
+          write h (header ++ cmds).to_char_buffer },
+   close h
+
+def setup_snapshots (n : app_args) : io unit :=
+do xs ← list_packages',
    -- print xs,
    mkdir "build/root" tt,
    ys ← with_cwd "build/root" $
@@ -204,12 +377,19 @@ do xs ← list_packages,
           let dir := r.dir,
           ex ← dir_exists dir,
           when (¬ ex) $ git_clone r.url r.dir,
-          leanpkg.manifest.from_file $ dir ++ "/" ++ leanpkg.leanpkg_toml_fn } },
+          r ← if r.update ∧ r.commit.is_none
+            then do c ← leanpkg.git_head_revision r.dir,
+                    pure { commit := c, .. r }
+            else pure r,
+           prod.mk r <$> leanpkg.manifest.from_file (dir ++ "/" ++ leanpkg.leanpkg_toml_fn) } },
    -- let zs := (ys.bind leanpkg.manifest.dependencies).foldl (flip dep_versions) (mk_rbmap _ _),
-   let s := snapshots' n xs ys,
+   -- let s := snapshots' n xs ys,
    -- let s : list (ℕ × list (string × string)) := snapshots zs,
-   -- print xs,
-   checkout_snapshot s
+   -- xs.mmap' $ io.put_str_ln ∘ to_string,
+   update_package_desc n ys,
+   dir ← checkout_snapshot' n ys,
+   write_Makefile dir ys,
+   pure ()
    -- return ds.join,
 
 def try (cmd : io unit) : io bool :=
@@ -262,18 +442,39 @@ do n :: xs ← cmdline_args | usage,
        | [] := pure ff
        | _ := usage
        end,
-   pure { tag := n, mathlib := b }
+   pure { tag := n, mathlib := b, lean_version := "3.4.2" }
 
 def main : io unit :=
-do -- cmd' { cmd := "elan", args := ["default","3.4.2"] },
-   args ← parse_args,
-   (s,xs) ← setup_snapshots args,
-   -- env.set_cwd "/Users/simon/lean/lean-depot",
-   -- _,
-   s ← prod.mk s <$> xs.mmap (λ y, prod.mk y <$> make y),
-   leanpkg.write_file "results.toml" (repr $ build_result_file [s]),
-   cmd' { cmd := "cat", args := ["results.toml"] },
+do
+   setup_snapshots { mathlib := ff, tag := "snapshot-lean-3.4.2--2019-10", lean_version := "3.4.2" },
+   -- mkdir "snapshot" tt,
+   -- let snap_name := "snapshot-lean-3.4.2--2019-10",
+   -- io.cmd { cmd := "git",args := ["clone", "--single-branch", "--branch", "snapshot", "http://gitlab.com/simon.hudon/lean-depot", "snapshot"] },
+   -- io.cmd { cmd := "cp", args := [sformat!"build/{snap_name}/snapshot.toml",
+   --                                sformat!"snapshot/{snap_name}.toml"] },
+   -- io.cmd { cmd := "cp", args := [sformat!"build/{snap_name}/failure.toml",
+   --                                sformat!"snapshot/{snap_name}-failure.toml"] },
+   -- io.cmd { cmd := "git",
+   --          args := ["add",sformat!"snapshot/{snap_name}-failure.toml",
+   --                   sformat!"snapshot/{snap_name}.toml"],
+   --          cwd := "snapshot" },
+   -- print s,
    pure ()
+-- list_dir "pkgs" >>= print
+
+-- def main' : io unit :=
+-- do -- cmd' { cmd := "elan", args := ["default","3.4.2"] },
+--    args ← parse_args,
+--    (s,xs) ← setup_snapshots args,
+--    -- env.set_cwd "/Users/simon/lean/lean-depot",
+--    -- _,
+--    s ← prod.mk s <$> xs.mmap (λ y, prod.mk y <$> make y),
+--    leanpkg.write_file "results.toml" (repr $ build_result_file [s]),
+--    cmd' { cmd := "cat", args := ["results.toml"] },
+--    pure ()
+
+-- #eval main
+
 
 -- #eval env.set_cwd "/Users/simon/lean/lean-depot"
 -- #eval do

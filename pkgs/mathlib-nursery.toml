@@ -1,0 +1,4 @@
+[package]
+url = "https://github.com/leanprover-community/mathlib-nursery"
+auto_update = true
+commit = "bc2cfba786bd5aca9dfa2d3fabc89179055936f2"

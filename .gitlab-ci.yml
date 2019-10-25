@@ -3,6 +3,8 @@ default:
   cache:
     paths:
       - build/snapshot-*/*/*/src
+      - build/snapshot-lean-3.4.2--2019-10/snapshot.toml
+      - build/snapshot-lean-3.4.2--2019-10/failure.toml
   before_script:
   - |
     if [ ! -d "$HOME/.elan/toolchains/" ]; then
@@ -26,13 +28,21 @@ mathlib:
   artifacts:
     paths:
       - build/snapshot-*/*/*/src
+      - build/snapshot-lean-3.4.2--2019-10/snapshot.toml
+      - build/snapshot-lean-3.4.2--2019-10/failure.toml
   script:
-    - timeout 10200 lean --run src/check.lean snapshot-2019-10 --mathlib | python scripts/detect_errors.py
+    - lean --run src/check.lean
+    - timeout 10200 make | python scripts/detect_errors.py
+    # - timeout 10200 lean --run src/check.lean snapshot-2019-10 --mathlib | python scripts/detect_errors.py
 
 test:
   stage: build
   artifacts:
     paths:
       - build/snapshot-*/*/*/src
+      - build/snapshot-lean-3.4.2--2019-10/snapshot.toml
+      - build/snapshot-lean-3.4.2--2019-10/failure.toml
   script:
-    - lean --run src/check.lean snapshot-2019-10
+    # - lean --run src/check.lean snapshot-2019-10
+    - lean --run src/check.lean
+    - make

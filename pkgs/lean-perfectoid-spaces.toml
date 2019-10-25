@@ -1,0 +1,4 @@
+[package]
+url = "https://github.com/leanprover-community/lean-perfectoid-spaces"
+auto_update = true
+commit = "c4b868638b1f51743a25eb8c06beea23ba8a5c7c"

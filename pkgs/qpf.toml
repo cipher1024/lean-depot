@@ -1,0 +1,4 @@
+[package]
+url = "https://github.com/avigad/qpf"
+auto_update = true
+commit = "4c9b960b9ff301c214cce615a59b16a23f04d817"
