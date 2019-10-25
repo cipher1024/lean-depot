@@ -48,4 +48,12 @@ test:
     # - lean --run src/check.lean snapshot-2019-10
     - lean --run src/check.lean
     - cd build/snapshot-lean-3.4.2--2019-10
-    - make
+    - make || true
+    - cd ../..
+    - git clone --single-branch --branch snapshot http://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot snapshot
+    - mkdir -p snapshot/3.4.2
+    - cp build/snapshot-lean-3.4.2--2019-10/snapshot.toml  build/snapshot-lean-3.4.2--2019-10/failure.toml snapshot/3.4.2/
+    - cd snapshot
+    - git add 3.4.2/snapshot.toml 3.4.2/failure.toml
+    - git commit -m "new"
+    - git push origin snapshot
