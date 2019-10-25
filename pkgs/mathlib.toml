@@ -1,4 +1,4 @@
 [package]
 url = "https://github.com/leanprover-community/mathlib"
 auto_update = true
-commit = "30aa8d2f76ad856c407938cd9a2dec878495f1ad"
+commit = "4bb8d4475f897c8997100d31fe84b33050444374"
