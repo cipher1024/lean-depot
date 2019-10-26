@@ -8,8 +8,6 @@ default:
       - build/snapshot-lean-3.4.2--2019-10/snapshot.toml
       - build/snapshot-lean-3.4.2--2019-10/failure.toml
       - snapshot/
-  variables:
-    LEAN_VERSION: "3.4.2"
   before_script:
   - |
     if [ ! -d "$HOME/.elan/toolchains/" ]; then
@@ -36,6 +34,8 @@ stages:
 mathlib:
   except:
     - schedules
+  variables:
+    LEAN_VERSION: "3.4.2"
   stage: mathlib
   artifacts:
     paths:
@@ -58,6 +58,8 @@ test:
       - build/snapshot-*/*/*/src
       - build/snapshot-lean-$LEAN_VERSION/snapshot.toml
       - build/snapshot-lean-$LEAN_VERSION/failure.toml
+  variables:
+    LEAN_VERSION: "3.4.2"
   script:
     # - lean --run src/check.lean snapshot-2019-10
     - lean --run src/check.lean --make-file $LEAN_VERSION snapshot-lean-$LEAN_VERSION
@@ -73,6 +75,7 @@ test:
 release:
   only:
     - schedules
+  stage: build
   script:
     - git checkout snapshot
     - git remote add release https://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot
@@ -83,6 +86,7 @@ release:
 bump:
   only:
     - schedules
+  stage: build
   script:
     - lean --run src/check.lean --update
     - git remote add release https://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot
