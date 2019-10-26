@@ -1,4 +1,4 @@
 [package]
 url = "https://github.com/rwbarton/lean-homotopy-theory"
 auto_update = true
-commit = "ab1ad7d61a8c1fd8543358fefb10197307b1510d"
+commit = "5fc5b4c6835e7cf2318a33bfd183d60d54903f09"

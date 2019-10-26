@@ -19,7 +19,7 @@ def git_checkout_tag (tag : string) : io unit :=
 io.cmd' {cmd := "git", args := ["checkout",sformat!"tags/{tag}","-f","--detach"]}
 
 def git_fetch : io unit :=
-io.cmd' { cmd := "git", args := ["fetch"] }
+io.cmd' { cmd := "git", args := ["fetch","--all"] }
 
 def string.is_prefix_of_aux : string.iterator → string.iterator → ℕ → bool
 | i j 0 := tt
