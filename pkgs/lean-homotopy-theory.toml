@@ -1,4 +1,5 @@
 [package]
-url = "https://github.com/rwbarton/lean-homotopy-theory"
+url = ["https://github.com/rwbarton/lean-homotopy-theory"]
+description = "missing"
 auto_update = true
 commit = "5fc5b4c6835e7cf2318a33bfd183d60d54903f09"

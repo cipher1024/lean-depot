@@ -2,10 +2,11 @@
 import system.io leanpkg.git leanpkg.main
 
 def io.cmd' (args : io.process.spawn_args) : io unit :=
-do child ← io.proc.spawn args,
-  exitv ← io.proc.wait child,
-  when (exitv ≠ 0) $ io.fail $ "process exited with status " ++ repr exitv,
-  return ()
+leanpkg.exec_cmd args
+-- do child ← io.proc.spawn args,
+--   exitv ← io.proc.wait child,
+--   when (exitv ≠ 0) $ io.fail $ "process exited with status " ++ repr exitv,
+--   return ()
 
 open io io.proc io.fs
 
@@ -131,18 +132,24 @@ def mathlib_sha := ("https://github.com/leanprover-community/mathlib",
 -- #eval mathlib_sha.2.length
 
 structure package :=
-(config_file url dir : string)
+(config_file dir : string)
+(url : list string)
 (commit : option string)
 (update : bool)
+(description : string)
 (author : option string )
 (left_over     : list (string × toml.value))
 -- (pkg_left_over : list (string × toml.value))
 
-
-
 instance : has_to_string package :=
 { to_string := λ p,
-  sformat!"{{ config_file := {repr p.config_file},\n  url := {repr p.url},\n  dir := {repr p.dir},\n  commit := {repr p.commit},\n  update := {p.update},\n  author := {p.author} }" }
+  sformat!"{{ config_file := {repr p.config_file},
+  url := {repr p.url},
+  dir := {repr p.dir},
+  commit := {repr p.commit},
+  update := {p.update},
+  description := {p.description},
+  author := {p.author} }" }
 
 structure app_args :=
 (tag : string)
@@ -212,6 +219,12 @@ instance : is_toml_value bool :=
                     | _ := none
                     end }
 
+instance {α} [is_toml_value α] : is_toml_value (list α) :=
+{ read_toml := λ v, match v with
+                    | (toml.value.array s) := s.mmap (read_toml _)
+                    | _ := none
+                    end }
+
 def lookup_toml (α) [is_toml_value α] (v : toml.value) (key : string) : option α :=
 v.lookup key >>= read_toml _
 
@@ -231,6 +244,7 @@ match split_off v key with
 | none := some (none,v)
 end
 
+-- #exit
 def package.to_toml (p : package) : toml.value :=
 toml.value.table $
 let sha := match p.commit with
@@ -242,13 +256,16 @@ let sha := match p.commit with
            | none := []
            end in
 ("package", toml.value.table $
-  [ ("url", toml.value.str p.url),
+  [ ("url", toml.value.array $ toml.value.str <$> p.url),
+    ("description", toml.value.str p.description),
     ("auto_update", toml.value.bool p.update) ]
   ++ sha ++ author ) :: p.left_over
 
 def package.from_toml (fn : string) (t : toml.value) : option package :=
 do (pkg,xs) ← split_off t "package",
-   url    ← lookup_toml string pkg "url",
+   url    ← list.ret <$> lookup_toml string pkg "url" <|>
+            lookup_toml (list string) pkg "url" ,
+   desc   ← lookup_toml string pkg "description",
    update ← lookup_toml bool   pkg "auto_update",
    commit ← lookup_optional_toml string pkg "commit",
    author ← lookup_optional_toml string pkg "author",
@@ -256,7 +273,8 @@ do (pkg,xs) ← split_off t "package",
           update := update,
           commit := commit, left_over := xs,
           author := author,
-          dir := dir_part (split_path url) }
+          description := desc,
+          dir := dir_part (split_path url.ilast) }
 
 def parse_package_file (fn : string) : io package :=
 do val ← parse_file fn,
@@ -327,7 +345,7 @@ def checkout_snapshot' (args : app_args) :
           do { let dir := p.dir,
                ex ← dir_exists dir,
                put_str_ln dir,
-               when (¬ ex) $ git_clone p.url dir,
+               when (¬ ex) $ git_clone p.url.head dir,
                git_fetch,
                env.set_cwd dir,
                match p.commit with
@@ -350,22 +368,29 @@ def dep_to_target_name (m : rbmap string (package × leanpkg.manifest)) : leanpk
 def write_Makefile (dir : string) (ps : list $ package × leanpkg.manifest) : io unit :=
 with_cwd dir $
 do let m : rbmap string (package × leanpkg.manifest) :=
-           rbmap.from_list (ps.map $ λ ⟨p,q⟩, (p.url, p, q)) ,
+           rbmap.from_list (ps.map $ λ ⟨p,q⟩, (p.url.head, p, q)) ,
    h ← mk_file_handle "Makefile" mode.write,
    let deps := ps.map $ λ p, sformat!"{p.1.dir}.pkg",
 
    let all_tgt := sformat!"all: {\" \".intercalate deps}\n\n",
-   let init_tgt := sformat!"init:\n\techo [snapshot] > snapshot.toml\n\techo [failure] > failure.toml\n\n",
+   let init_tgt := sformat!"init:
+\techo [failure] > failure.toml
+\techo \"\" > snapshot.toml
+\n",
    write h (all_tgt ++ init_tgt).to_char_buffer,
-   ps.mmap' $ λ p,
+   ps.mmap' $ λ p : package × _,
      do { some sha ← pure p.1.commit | pure (),
           let deps := p.2.dependencies.filter_map $ dep_to_target_name m,
-          -- put_str_ln sformat!"{repr p.2}",
-          -- put_str_ln sformat!"{deps}",
-          let header := sformat!"{p.1.dir}.pkg: init {\" \".intercalate deps}\n\n",
-          let echo := sformat!"echo \"{p.1.name} = \\\"{sha}\\\"\"",
-          let cmds   := sformat!"\tcd {p.1.dir} && leanpkg test || ({echo} >> ../../failure.toml && false)\n\t{echo} >> snapshot.toml\n\n",
-          write h (header ++ cmds).to_char_buffer },
+          let header := sformat!"{p.1.dir}.pkg: init {\" \".intercalate deps}\n",
+          let echo := sformat!"echo \"{p.1.name} = {{ git = \\\"{p.1.url}\\\", rev = \\\"{sha}\\\" } \"",
+          let cmds   := sformat!"\t@cd {p.1.dir} && leanpkg test || ({echo} >> ../../failure.toml && false)",
+          let echo   := sformat!"
+\t@echo \"[snapshot.{p.1.name}]\" >> snapshot.toml
+\t@echo \"git = {p.1.url.map repr}\" >> snapshot.toml
+\t@echo \"rev = \\\"{sha}\\\"\" >> snapshot.toml
+\t@echo \"desc = \\\"{p.1.description}\\\"\" >> snapshot.toml
+\t@echo \"\" >> snapshot.toml\n\n",
+          write h (header ++ cmds ++ echo).to_char_buffer },
    close h
 
 def setup_snapshots (n : app_args) : io unit :=
@@ -376,7 +401,7 @@ do xs ← list_packages',
    do { xs.mmap $ λ r, do {
           let dir := r.dir,
           ex ← dir_exists dir,
-          when (¬ ex) $ git_clone r.url r.dir,
+          when (¬ ex) $ git_clone r.url.head r.dir,
           r ← if r.update ∧ r.commit.is_none
             then do c ← leanpkg.git_head_revision r.dir,
                     pure { commit := c, .. r }
@@ -453,7 +478,7 @@ do xs ← list_packages',
         let dir := r.dir,
         ex ← dir_exists dir,
         if ¬ ex
-          then git_clone r.url r.dir
+          then git_clone r.url.head r.dir
           else git_pull_master,
         c ← leanpkg.git_head_revision r.dir,
         let r := { commit := c, .. r },

@@ -15,15 +15,22 @@ def join (sep : string) : list string → string
 
 namespace toml
 
+-- @[simp, reducible]
+def list' (α : Sort*) := list α
+
+instance {α} : has_sizeof (list' α) :=
+⟨ λ x : list α, sizeof x - 1 ⟩
+
 inductive value : Type
 | str : string → value
 | nat : ℕ → value
 | bool : bool → value
-| table : list (string × value) → value
+| array : list value → opt_param unit () → value
+| table : list (string × value) → opt_param unit () → value
 
 namespace value
 
-private def escapec : char → string
+def escapec : char → string
 | '\"' := "\\\""
 | '\t' := "\\t"
 | '\n' := "\\n"
@@ -34,22 +41,27 @@ private def escape (s : string) : string :=
 s.fold "" (λ s c, s ++ escapec c)
 
 /- TODO(Leo): has_to_string -/
-private mutual def repr_core, repr_pairs
+private mutual def repr_core, repr_pairs, repr_array
 with repr_core : value → string
 | (value.str s)    := "\"" ++ escape s ++ "\""
 | (value.nat n)    := repr n
 | (value.bool tt)  := "true"
 | (value.bool ff)  := "false"
-| (value.table cs) := "{" ++ repr_pairs cs ++ "}"
+| (value.array cs _) := "[" ++ repr_array cs ++ "]"
+| (value.table cs _) := "{" ++ repr_pairs cs ++ "}"
 with repr_pairs : list (string × value) → string
 | []               := ""
 | [(k, v)]         := k ++ " = " ++ repr_core v
 | ((k, v)::kvs)    := k ++ " = " ++ repr_core v ++ ", " ++ repr_pairs kvs
+with repr_array : list value → string
+| []          := ""
+| [v]         := repr_core v
+| (v::vs)     := repr_core v ++ ", " ++ repr_array vs
 
 protected def repr : ∀ (v : value), string
-| (table cs) := join "\n" $ do (h, c) ← cs,
+| (table cs _) := join "\n" $ do (h, c) ← cs,
   match c with
-  | table ds :=
+  | table ds _ :=
     ["[" ++ h ++ "]\n" ++
      join "" (do (k, v) ← ds,
        [k ++ " = " ++ repr_core v ++ "\n"])]
@@ -62,7 +74,7 @@ instance : has_repr value :=
 ⟨value.repr⟩
 
 def lookup : value → string → option value
-| (value.table cs) k :=
+| (value.table cs _) k :=
   match cs.filter (λ c : string × value, c.fst = k) with
   | [] := none
   | (k,v) ::_ := some v
@@ -137,10 +149,13 @@ value.bool <$> Boolean
 def InlineTable : parser value :=
 tok "{" *> (value.table <$> sep_by (tok ",") KeyVal) <* tok "}"
 
+def InlineArray : parser value :=
+tok "[" *> (value.array <$> sep_by (tok ",") Val) <* tok "]"
+
 end
 
 def Val : parser value :=
-fix $ λ Val, StrVal <|> NatVal <|> BoolVal <|> InlineTable Val
+fix $ λ Val, StrVal <|> NatVal <|> BoolVal <|> InlineTable Val <|> InlineArray Val
 
 def Expression := Table Val
 

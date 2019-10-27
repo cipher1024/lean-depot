@@ -1,4 +1,5 @@
 [package]
-url = "https://github.com/leanprover-community/mathlib"
+url = ["https://github.com/leanprover/mathlib", "https://github.com/leanprover-community/mathlib"]
+description = "Lean mathematical components library"
 auto_update = true
 commit = "4bb8d4475f897c8997100d31fe84b33050444374"

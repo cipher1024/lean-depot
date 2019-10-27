@@ -1,4 +1,5 @@
 [package]
-url = "https://github.com/leanprover-community/mathlib-nursery"
+url = ["https://github.com/leanprover-community/mathlib-nursery"]
+description = "missing"
 auto_update = true
 commit = "0479b31fa5b4d39f41e89b8584c9f5bf5271e8ec"
