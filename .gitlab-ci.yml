@@ -7,7 +7,6 @@ default:
       - build/snapshot-*/*/*/src
       - build/snapshot-lean-3.4.2--2019-10/snapshot.toml
       - build/snapshot-lean-3.4.2--2019-10/failure.toml
-      - snapshot/
   before_script:
   - |
     if [ ! -d "$HOME/.elan/toolchains/" ]; then
