@@ -95,11 +95,11 @@ release:
     - git remote add release https://gitlab-ci-token:$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot.git/
     - git fetch --all
     - git checkout --track release/snapshot
-    - cp $LEAN_VERSION/snapshot.toml $LEAN_VERSION/snapshot-$TAG.toml
-    - git add $LEAN_VERSION/snapshot-$TAG.toml
+    - cp $LEAN_VERSION/snapshot.toml $LEAN_VERSION/$TAG.toml
+    - git add $LEAN_VERSION/$TAG.toml
     - git config user.email "machine@email.com"
     - git config user.name "simon.hudon"
-    - git config user.password $GITLAB_TOKEN
+    # - git config user.password $GITLAB_TOKEN
     - git commit -m "new"
     - git fetch release --tags
     - git tag $TAG
@@ -118,6 +118,6 @@ bump:
     - git add pkgs/*.toml
     - git config --global user.email "machine@email.com"
     - git config --global user.name "simon.hudon"
-    - git config --global user.password $GITLAB_TOKEN
+    # - git config --global user.password $GITLAB_TOKEN
     - git commit -m "new-snapshot" || true
     - git push release master || true
