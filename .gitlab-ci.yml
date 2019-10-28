@@ -94,7 +94,7 @@ release:
     - cp $LEAN_VERSION/snapshot.toml $LEAN_VERSION/snapshot-$TAG.toml
     - git add $LEAN_VERSION/snapshot-$TAG.toml
     - git config --global user.email "machine@email.com"
-    - git config --global user.name "machine"
+    # - git config --global user.name "machine"
     - git commit -m "new"
     - git fetch release --tags
     - git tag $TAG
@@ -112,6 +112,6 @@ bump:
     - lean --run src/check.lean --update
     - git add pkgs/*.toml
     - git config --global user.email "machine@email.com"
-    - git config --global user.name "machine"
+    # - git config --global user.name "machine"
     - git commit -m "new-snapshot" || true
     - git push release master || true
