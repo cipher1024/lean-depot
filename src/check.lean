@@ -348,12 +348,12 @@ def checkout_snapshot' (args : app_args) :
                d ← env.get_cwd,
                put_str_ln sformat!"> cwd: {d}",
                when (¬ ex) $ git_clone p.url.head dir,
-               git_fetch,
                env.set_cwd dir,
                -- put_str_ln $ repr
                put_str_ln sformat!"> cwd (2): {d}, {dir}",
                d ← env.get_cwd,
                put_str_ln sformat!"> cwd (3): {d}",
+               git_fetch,
                match p.commit with
                | some sha := git_checkout_hash sha
                | none     := catch (git_checkout_tag args.tag) (λ _ : io.error, (return () : io unit))
