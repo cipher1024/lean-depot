@@ -393,16 +393,17 @@ do let m : rbmap string (package × leanpkg.manifest) :=
    ps.mmap' $ λ p : package × _,
      do { some sha ← pure p.1.commit | pure (),
           let deps := p.2.dependencies.filter_map $ dep_to_target_name m,
-          let header := sformat!"{p.1.dir}.pkg: init {\" \".intercalate deps}\n",
           let echo := sformat!"echo \"{p.1.name} = {{ git = \\\"{p.1.url}\\\", rev = \\\"{sha}\\\" } \"",
-          let cmds   := sformat!"\t@cd {p.1.dir} && leanpkg test || ({echo} >> ../../failure.toml && false)",
-          let echo   := sformat!"
+          -- let header := sformat!"\n",
+          let cmds   := sformat!"
+{p.1.dir}.pkg: init {\" \".intercalate deps}
+\tcd {p.1.dir} && leanpkg test || ({echo} >> ../../failure.toml && false)
 \t@echo \"[snapshot.{p.1.name}]\" >> snapshot.toml
 \t@echo \"git = {toml.value.escape $ repr p.1.url}\" >> snapshot.toml
 \t@echo \"rev = \\\"{sha}\\\"\" >> snapshot.toml
 \t@echo \"desc = \\\"{p.1.description}\\\"\" >> snapshot.toml
 \t@echo \"\" >> snapshot.toml\n\n",
-          write h (header ++ cmds ++ echo).to_char_buffer },
+          write h cmds.to_char_buffer },
    close h
 
 def setup_snapshots (n : app_args) : io unit :=
