@@ -1,5 +1,5 @@
 [package]
 url = ["https://github.com/avigad/qpf"]
-description = "missing"
+description = "Datatypes as quotients of polynomial functors"
 auto_update = true
 commit = "debe2eacb8cf46b21aba2eaf3f2e20940da0263b"
