@@ -157,6 +157,7 @@ instance : has_to_string package :=
 structure app_args :=
 (tag : string)
 (lean_version : string)
+(dir : string)
 -- (mathlib : bool)
 
 def usage {α} : io α :=
@@ -339,7 +340,7 @@ def checkout_snapshot' (args : app_args) :
   list (package × leanpkg.manifest) →
   io (string)
 | ps :=
-   do { let sd := sformat!"build/{args.tag}",
+   do { let sd := sformat!"{args.dir}/build/{args.tag}",
         mkdir sd tt,
         put_str_ln sd,
         -- let m := rbmap.from_list m,
@@ -474,10 +475,10 @@ list.head' <$> cmdline_args
 def parse_args : io (option app_args) :=
 do xs ← cmdline_args | usage,
    match xs with
-       | ["--makefile",vers,tag] := pure (some { tag := tag, lean_version := vers })
+       | ["--makefile",vers,tag] :=
+         pure (some { tag := tag, lean_version := vers, dir := "." })
        | ["--makefile",vers,tag,p] :=
-       do env.set_cwd p,
-          pure (some { tag := tag, lean_version := vers })
+         pure (some { tag := tag, lean_version := vers, dir := p })
        | ["--update"] := pure none
        | _ := usage
        end
