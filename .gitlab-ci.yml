@@ -48,7 +48,8 @@ mathlib:
     - cp scripts/detect_errors.py build/snapshot-lean-$LEAN_VERSION/
     - cd build/snapshot-lean-$LEAN_VERSION
     # - timeout 10200 make
-    - timeout 10200 make | python detect_errors.py || true
+    # - timeout 10200 make | python detect_errors.py || true
+    - timeout 300 make | python detect_errors.py || true
     # - timeout 10200 lean --run src/check.lean snapshot-2019-10 --mathlib | python scripts/detect_errors.py
 
 test:
@@ -88,6 +89,7 @@ release:
   variables:
     LEAN_VERSION: "3.4.2"
   script:
+    - git fetch --all
     - git checkout snapshot
     - git remote add release https://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot
     - cp $LEAN_VERSION/snapshot.toml $LEAN_VERSION/snapshot-$TAG.toml
@@ -95,6 +97,7 @@ release:
     - git commit -m "new"
     - git fetch release --tags
     - git tag $TAG
+    - git push release snapshot
     - git push release tag $TAG
 
 bump:
@@ -105,5 +108,7 @@ bump:
     - lean --run src/check.lean --update
     - git remote add release https://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot
     - git add pkgs/*.toml
+    - git config --global user.email "machine@email.com"
+    - git config --global user.name "machine"
     - git commit -m "new-snapshot" || true
     - git push release master || true
