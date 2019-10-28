@@ -1,5 +1,5 @@
 [package]
 url = ["https://github.com/flypitch/flypitch"]
-description = "missing"
+description = "A formal proof of the independence of the continuum hypothesis"
 auto_update = true
 commit = "c9f22eeab9ff3083020976f981c62d5bdc698958"
