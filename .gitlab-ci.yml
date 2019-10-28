@@ -72,7 +72,7 @@ test:
     - make || true
     - cd ../..
     - cp build/snapshot-lean-$LEAN_VERSION/snapshot.toml  build/snapshot-lean-$LEAN_VERSION/failure.toml snapshot/$LEAN_VERSION/
-    - git clone --single-branch --branch snapshot https://gitlab.com/simon.hudon/lean-depot snapshot || true
+    - git clone --single-branch --branch snapshot https://gitlab.com/simon.hudon/lean-depot.git snapshot || true
     - mkdir -p snapshot/3.4.2
     - mkdir -p snapshot/3.5.0
     - mkdir -p snapshot/lean-nightly
@@ -91,32 +91,32 @@ release:
   variables:
     LEAN_VERSION: "3.4.2"
   script:
-    - git remote add release https://gitlab.com/simon.hudon/lean-depot.git
+    # - git remote add release https://gitlab.com/simon.hudon/lean-depot.git
     - git fetch --all
-    - git checkout --track release/snapshot
+    - git checkout --track origin/snapshot
     - cp $LEAN_VERSION/snapshot.toml $LEAN_VERSION/snapshot-$TAG.toml
     - git add $LEAN_VERSION/snapshot-$TAG.toml
-    - git config --global user.email "machine@email.com"
-    - git config --global user.name "simon.hudon"
-    - git config --global user.password $GITLAB_TOKEN
+    - git config user.email "machine@email.com"
+    - git config user.name "simon.hudon"
+    - git config user.password $GITLAB_TOKEN
     - git commit -m "new"
-    - git fetch release --tags
+    - git fetch origin --tags
     - git tag $TAG
-    - git push release snapshot
-    - git push release tag $TAG
+    - git push origin snapshot
+    - git push origin tag $TAG
 
 bump:
   only:
     - schedules
   stage: build
   script:
-    - git remote add release https://gitlab.com/simon.hudon/lean-depot.git
+    # - git remote add release https://gitlab.com/simon.hudon/lean-depot.git
     - git fetch --all
-    - git checkout --track release/master
+    - git checkout --track origin/master
     - lean --run src/check.lean --update
     - git add pkgs/*.toml
     - git config --global user.email "machine@email.com"
     - git config --global user.name "simon.hudon"
     - git config --global user.password $GITLAB_TOKEN
     - git commit -m "new-snapshot" || true
-    - git push release master || true
+    - git push origin master || true
