@@ -44,8 +44,7 @@ mathlib:
       - ../build/snapshot-lean-$LEAN_VERSION/snapshot.toml
       - ../build/snapshot-lean-$LEAN_VERSION/failure.toml
   script:
-    - cd ../
-    - lean --run lean-depot/src/check.lean --makefile $LEAN_VERSION snapshot-lean-$LEAN_VERSION
+    - lean --run src/check.lean --makefile $LEAN_VERSION snapshot-lean-$LEAN_VERSION ..
     - cp scripts/detect_errors.py build/snapshot-lean-$LEAN_VERSION/
     - cd build/snapshot-lean-$LEAN_VERSION
     # - timeout 10200 make
@@ -68,8 +67,7 @@ test:
     LEAN_VERSION: "3.4.2"
   script:
     # - lean --run src/check.lean snapshot-2019-10
-    - cd ../
-    - lean --run lean-depot/src/check.lean --makefile $LEAN_VERSION snapshot-lean-$LEAN_VERSION
+    - lean --run src/check.lean --makefile $LEAN_VERSION snapshot-lean-$LEAN_VERSION ..
     - cd build/snapshot-lean-$LEAN_VERSION
     - make >> error.txt || true
     - cd ../..

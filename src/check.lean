@@ -475,6 +475,9 @@ def parse_args : io (option app_args) :=
 do xs ← cmdline_args | usage,
    match xs with
        | ["--makefile",vers,tag] := pure (some { tag := tag, lean_version := vers })
+       | ["--makefile",vers,tag,p] :=
+       do env.set_cwd p,
+          pure (some { tag := tag, lean_version := vers })
        | ["--update"] := pure none
        | _ := usage
        end
