@@ -345,6 +345,8 @@ def checkout_snapshot' (args : app_args) :
           do { let dir := p.dir,
                ex ← dir_exists dir,
                put_str_ln dir,
+               d ← env.get_cwd,
+               put_str_ln sformat!"> cwd: {d}",
                when (¬ ex) $ git_clone p.url.head dir,
                git_fetch,
                env.set_cwd dir,
