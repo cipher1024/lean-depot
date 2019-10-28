@@ -88,9 +88,9 @@ release:
   variables:
     LEAN_VERSION: "3.4.2"
   script:
+    - git remote add release https://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot.git
     - git fetch --all
     - git checkout snapshot
-    - git remote add release https://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot
     - cp $LEAN_VERSION/snapshot.toml $LEAN_VERSION/snapshot-$TAG.toml
     - git add $LEAN_VERSION/snapshot-$TAG.toml
     - git config --global user.email "machine@email.com"
@@ -106,8 +106,10 @@ bump:
     - schedules
   stage: build
   script:
+    - git remote add release https://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot.git
+    - git fetch
+    - git checkout master
     - lean --run src/check.lean --update
-    - git remote add release https://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot
     - git add pkgs/*.toml
     - git config --global user.email "machine@email.com"
     - git config --global user.name "machine"
