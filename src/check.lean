@@ -22,6 +22,9 @@ io.cmd' {cmd := "git", args := ["checkout",sformat!"tags/{tag}","-f","--detach"]
 def git_fetch : io unit :=
 io.cmd' { cmd := "git", args := ["fetch","--all"] }
 
+def git_remote : io unit :=
+io.cmd' { cmd := "git", args := ["remote","-v"] }
+
 def string.is_prefix_of_aux : string.iterator → string.iterator → ℕ → bool
 | i j 0 := tt
 | i j (nat.succ n) :=
@@ -353,7 +356,9 @@ def checkout_snapshot' (args : app_args) :
                put_str_ln sformat!"> cwd (2): {d}, {dir}",
                d ← env.get_cwd,
                put_str_ln sformat!"> cwd (3): {d}",
+               git_remote,
                git_fetch,
+               git_remote,
                match p.commit with
                | some sha := git_checkout_hash sha
                | none     := catch (git_checkout_tag args.tag) (λ _ : io.error, (return () : io unit))
