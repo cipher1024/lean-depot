@@ -48,8 +48,7 @@ mathlib:
     - cp scripts/detect_errors.py build/snapshot-lean-$LEAN_VERSION/
     - cd build/snapshot-lean-$LEAN_VERSION
     # - timeout 10200 make
-    # - timeout 10200 make | python detect_errors.py || true
-    - timeout 300 make | python detect_errors.py || true
+    - timeout 10200 make | python detect_errors.py || true
     # - timeout 10200 lean --run src/check.lean snapshot-2019-10 --mathlib | python scripts/detect_errors.py
 
 test:
