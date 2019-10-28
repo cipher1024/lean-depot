@@ -1,5 +1,5 @@
 [package]
 url = ["https://github.com/rwbarton/lean-homotopy-theory"]
-description = "missing"
+description = "A development of homotopy theory in the Lean formal theorem prover"
 auto_update = true
 commit = "5fc5b4c6835e7cf2318a33bfd183d60d54903f09"
