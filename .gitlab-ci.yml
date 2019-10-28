@@ -4,7 +4,7 @@ default:
   #   - schedules
   cache:
     paths:
-      - build/snapshot-*/*/*/
+      - build/snapshot-*/*/*
       - build/snapshot-lean-$LEAN_VERSION/snapshot.toml
       - build/snapshot-lean-$LEAN_VERSION/failure.toml
       # - ../build/snapshot-*/*/*/src
@@ -37,7 +37,7 @@ mathlib:
   stage: mathlib
   artifacts:
     paths:
-      - build/snapshot-*/*/*/
+      - build/snapshot-*/*/*
       - build/snapshot-lean-$LEAN_VERSION/snapshot.toml
       - build/snapshot-lean-$LEAN_VERSION/failure.toml
       # - ../build/snapshot-*/*/*/src
@@ -57,7 +57,7 @@ test:
   stage: build
   artifacts:
     paths:
-      - build/snapshot-*/*/*/
+      - build/snapshot-*/*/*
       - build/snapshot-lean-$LEAN_VERSION/snapshot.toml
       - build/snapshot-lean-$LEAN_VERSION/failure.toml
       # - ../build/snapshot-*/*/*/src
