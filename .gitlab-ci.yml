@@ -4,12 +4,12 @@ default:
   #   - schedules
   cache:
     paths:
-      - build/snapshot-*/*/*/src
+      - build/snapshot-*/*/*/
       - build/snapshot-lean-$LEAN_VERSION/snapshot.toml
       - build/snapshot-lean-$LEAN_VERSION/failure.toml
-      - ../build/snapshot-*/*/*/src
-      - ../build/snapshot-lean-$LEAN_VERSION/snapshot.toml
-      - ../build/snapshot-lean-$LEAN_VERSION/failure.toml
+      # - ../build/snapshot-*/*/*/src
+      # - ../build/snapshot-lean-$LEAN_VERSION/snapshot.toml
+      # - ../build/snapshot-lean-$LEAN_VERSION/failure.toml
   before_script:
   - |
     if [ ! -d "$HOME/.elan/toolchains/" ]; then
@@ -37,16 +37,16 @@ mathlib:
   stage: mathlib
   artifacts:
     paths:
-      - build/snapshot-*/*/*/src
+      - build/snapshot-*/*/*/
       - build/snapshot-lean-$LEAN_VERSION/snapshot.toml
       - build/snapshot-lean-$LEAN_VERSION/failure.toml
-      - ../build/snapshot-*/*/*/src
-      - ../build/snapshot-lean-$LEAN_VERSION/snapshot.toml
-      - ../build/snapshot-lean-$LEAN_VERSION/failure.toml
+      # - ../build/snapshot-*/*/*/src
+      # - ../build/snapshot-lean-$LEAN_VERSION/snapshot.toml
+      # - ../build/snapshot-lean-$LEAN_VERSION/failure.toml
   script:
-    - lean --run src/check.lean --makefile $LEAN_VERSION snapshot-lean-$LEAN_VERSION ..
-    - cp scripts/detect_errors.py ../build/snapshot-lean-$LEAN_VERSION/
-    - cd ../build/snapshot-lean-$LEAN_VERSION
+    - lean --run src/check.lean --makefile $LEAN_VERSION snapshot-lean-$LEAN_VERSION
+    - cp scripts/detect_errors.py build/snapshot-lean-$LEAN_VERSION/
+    - cd build/snapshot-lean-$LEAN_VERSION
     # - timeout 10200 make
     - timeout 10200 make | python detect_errors.py || true
     # - timeout 10200 lean --run src/check.lean snapshot-2019-10 --mathlib | python scripts/detect_errors.py
@@ -57,18 +57,18 @@ test:
   stage: build
   artifacts:
     paths:
-      - build/snapshot-*/*/*/src
+      - build/snapshot-*/*/*/
       - build/snapshot-lean-$LEAN_VERSION/snapshot.toml
       - build/snapshot-lean-$LEAN_VERSION/failure.toml
-      - ../build/snapshot-*/*/*/src
-      - ../build/snapshot-lean-$LEAN_VERSION/snapshot.toml
-      - ../build/snapshot-lean-$LEAN_VERSION/failure.toml
+      # - ../build/snapshot-*/*/*/src
+      # - ../build/snapshot-lean-$LEAN_VERSION/snapshot.toml
+      # - ../build/snapshot-lean-$LEAN_VERSION/failure.toml
   variables:
     LEAN_VERSION: "3.4.2"
   script:
     # - lean --run src/check.lean snapshot-2019-10
-    - lean --run src/check.lean --makefile $LEAN_VERSION snapshot-lean-$LEAN_VERSION ..
-    - cd ../build/snapshot-lean-$LEAN_VERSION
+    - lean --run src/check.lean --makefile $LEAN_VERSION snapshot-lean-$LEAN_VERSION
+    - cd build/snapshot-lean-$LEAN_VERSION
     - make || true
     - cd ../..
     - cp build/snapshot-lean-$LEAN_VERSION/snapshot.toml  build/snapshot-lean-$LEAN_VERSION/failure.toml snapshot/$LEAN_VERSION/
@@ -85,9 +85,14 @@ release:
   only:
     - schedules
   stage: build
+  variables:
+    LEAN_VERSION: "3.4.2"
   script:
     - git checkout snapshot
     - git remote add release https://$GITLAB_TOKEN@gitlab.com/simon.hudon/lean-depot
+    - cp $LEAN_VERSION/snapshot.toml $LEAN_VERSION/snapshot-$TAG.toml
+    - git add $LEAN_VERSION/snapshot-$TAG.toml
+    - git commit -m "new"
     - git fetch release --tags
     - git tag $TAG
     - git push release tag $TAG

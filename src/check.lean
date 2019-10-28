@@ -20,7 +20,7 @@ def git_checkout_tag (tag : string) : io unit :=
 io.cmd' {cmd := "git", args := ["checkout",sformat!"tags/{tag}","-f","--detach"]}
 
 def git_fetch : io unit :=
-io.cmd' { cmd := "git", args := ["fetch","--all"] }
+io.cmd' { cmd := "git", args := ["fetch"] }
 
 def git_remote : io unit :=
 io.cmd' { cmd := "git", args := ["remote","-v"] }
@@ -349,17 +349,18 @@ def checkout_snapshot' (args : app_args) :
           do { let dir := p.dir,
                ex ← dir_exists dir,
                put_str_ln dir,
-               d ← env.get_cwd,
-               put_str_ln sformat!"> cwd: {d}",
+               -- d ← env.get_cwd,
+               -- put_str_ln sformat!"> cwd: {d}",
                when (¬ ex) $ git_clone p.url.head dir,
                env.set_cwd dir,
+               -- io.cmd' { cmd := "ls", args := ["-la"] },
                -- put_str_ln $ repr
-               put_str_ln sformat!"> cwd (2): {d}, {dir}",
+               -- put_str_ln sformat!"> cwd (2): {d}, {dir}",
                d ← env.get_cwd,
-               put_str_ln sformat!"> cwd (3): {d}",
-               git_remote,
+               -- put_str_ln sformat!"> cwd (3): {d}",
+               -- git_remote,
                git_fetch,
-               git_remote,
+               -- git_remote,
                match p.commit with
                | some sha := git_checkout_hash sha
                | none     := catch (git_checkout_tag args.tag) (λ _ : io.error, (return () : io unit))
@@ -376,7 +377,6 @@ def dep_to_target_name (m : rbmap string (package × leanpkg.manifest)) : leanpk
 | { src := (leanpkg.source.git url _ _), .. } := m.find (canonicalize_url url) >>= λ ⟨p,_⟩, some sformat!"{p.dir}.pkg"
 | { src := (leanpkg.source.path _), .. } := none
 
--- #exit
 def write_Makefile (dir : string) (ps : list $ package × leanpkg.manifest) : io unit :=
 with_cwd dir $
 do let m : rbmap string (package × leanpkg.manifest) :=
@@ -398,7 +398,7 @@ do let m : rbmap string (package × leanpkg.manifest) :=
           let cmds   := sformat!"\t@cd {p.1.dir} && leanpkg test || ({echo} >> ../../failure.toml && false)",
           let echo   := sformat!"
 \t@echo \"[snapshot.{p.1.name}]\" >> snapshot.toml
-\t@echo \"git = {p.1.url.map repr}\" >> snapshot.toml
+\t@echo \"git = {toml.value.escape $ repr p.1.url}\" >> snapshot.toml
 \t@echo \"rev = \\\"{sha}\\\"\" >> snapshot.toml
 \t@echo \"desc = \\\"{p.1.description}\\\"\" >> snapshot.toml
 \t@echo \"\" >> snapshot.toml\n\n",

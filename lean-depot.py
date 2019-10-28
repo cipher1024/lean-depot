@@ -43,7 +43,10 @@ if not os.path.exists('_depot'):
 l = {}
 
 def user_command(name, parser = None):
+    if not parser:
+        parser = argparse.ArgumentParser()
     def decorator(func):
+        parser.description = func.__doc__
         l[name] = (func, parser)
         return func
     return decorator
@@ -88,6 +91,27 @@ def load_snapshot(fn):
              for git in to_list(v['git']) }
     return snap
 
+def find_best_match(prj):
+    tag   = prj['package']['lib_snapshot']
+    vers  = prj['package']['lean_version']
+    deps  = prj['dependencies']
+    depot = get_depot(vers)
+    depot = [ (k, load_snapshot(v))
+                  for (k,v) in depot.items() ]
+                          # key=lambda x: x[0])
+    depot = [ k
+              for (k,v) in depot
+              if len([ k2 for k2 in deps.values()
+                       if k2 not in v ]) == 0 ]
+    (x,depot) = (depot[0], depot[1:])
+    if len(depot) == 0: snap = x
+    else: snap = max(depot)
+    return snap
+
+def wrap_indent(m, t, n):
+    m = ''.ljust(m)
+    return ("\n".join([ m + x for x in textwrap.wrap(t, n)]))
+
 @user_command('configure')
 def configure():
     """setup leanpkg configuration"""
@@ -118,7 +142,7 @@ def configure():
 
 @user_command('init')
 def init():
-    """use latest snapshot"""
+    """create lean-depot configuration from leanpkg file"""
     leanpkg = toml.load(f'leanpkg.toml')
     name         = leanpkg['package']['name']
     lean_version = leanpkg['package']['lean_version']
@@ -142,39 +166,64 @@ def init():
     with open('lean-depot.toml', 'w') as h:
         h.write(toml.encoder.dumps(prj, toml.encoder.TomlPreserveInlineDictEncoder()))
 
+add_parser = argparse.ArgumentParser()
+add_parser.add_argument('pkg', # required=False,
+                            type=str,
+                            help='an integer for the accumulator')
+
+@user_command('add', add_parser)
+def add_dep(pkg):
+    """add dependency"""
+    prj = toml.load('lean-depot.toml')
+    tag  = prj['package']['lib_snapshot']
+    vers = prj['package']['lean_version']
+    depot = toml.load(get_depot(vers)[tag])['snapshot']
+    # print(depot)
+    if pkg in depot:
+        prj['dependencies'][pkg] = depot[pkg]['git'][0]
+        with open('lean-depot.toml', 'w') as h:
+            h.write(toml.encoder.dumps(prj, toml.encoder.TomlPreserveInlineDictEncoder()))
+    else:
+        print(f'package not found in current snapshot \'{pkg}\'')
+    configure()
+
 @user_command('update')
 def update():
     """use latest snapshot"""
     prj   = toml.load('lean-depot.toml')
-    tag   = prj['package']['lib_snapshot']
-    vers  = prj['package']['lean_version']
-    deps  = prj['dependencies']
-    depot = get_depot(vers)
-    depot = [ (k, load_snapshot(v))
-                  for (k,v) in depot.items() ]
-                          # key=lambda x: x[0])
-    depot = [ k
-              for (k,v) in depot
-              if len([ k2 for k2 in deps.values()
-                       if k2 not in v ]) == 0 ]
-    (x,depot) = (depot[0], depot[1:])
-    if len(depot) == 0: snap = x
-    else: snap = max(depot)
+    snap  = find_best_match(prj)
     prj['package']['lib_snapshot'] = snap
     with open('lean-depot.toml', 'w') as h:
-        print(toml.encoder.dumps(prj, toml.encoder.TomlPreserveInlineDictEncoder()))
         h.write(toml.encoder.dumps(prj, toml.encoder.TomlPreserveInlineDictEncoder()))
+    configure()
 
-@user_command('new')
-def new():
-    """create new package configuration"""
-    print("not implemented")
+new_parser = argparse.ArgumentParser()
+new_parser.add_argument('name', # required=False,
+                            type=str,
+                            help='name of new package')
 
-@user_command('make_snapshot')
-def make_snapshot():
+@user_command('new', new_parser)
+def new(name):
     """create new package configuration"""
-    pkg = toml.load('pkgs/mathlib.toml')['package']
-    print(pkg)
+    prj = { 'package' : { 'name' : name,
+                          'lean_version' : '3.4.2',
+                          'lib_snapshot' : 'nightly' },
+            'dependencies' : {},
+            'extra_deps' : {} }
+    snap  = find_best_match(prj)
+    prj['package']['lib_snapshot'] = snap
+    with open('lean-depot.toml', 'w') as h:
+        h.write(toml.encoder.dumps(prj, toml.encoder.TomlPreserveInlineDictEncoder()))
+    configure()
+
+make_parser = argparse.ArgumentParser()
+make_parser.add_argument('path', # required=False,
+                            type=str,
+                            help='path to new snapshot file')
+
+@user_command('make_snapshot', make_parser)
+def make_snapshot(path):
+    """create snapshot file from a set of package descriptions"""
     pkgs = { os.path.splitext(fn)[0] : toml.load(f'pkgs/{fn}')['package']
              for fn in os.listdir('pkgs')
              if os.path.splitext(fn)[1] == '.toml' }
@@ -184,13 +233,18 @@ def make_snapshot():
                                   'rev' : pkg['commit'],
                                   'desc' : pkg['description'] }
                                 for (k,pkg) in pkgs.items() } }
-    with open('snapshot/3.4.2/snapshot.toml', 'w') as h:
+    with open(path, 'w') as h:
         print(toml.dump(snap, h))
 
 @user_command('resolver')
 def resolver():
     """find snapshots to accomodate all dependencies"""
-    print("not implemented")
+    prj   = toml.load('lean-depot.toml')
+    snap  = find_best_match(prj)
+    prj['package']['lib_snapshot'] = snap
+    with open('lean-depot.toml', 'w') as h:
+        h.write(toml.encoder.dumps(prj, toml.encoder.TomlPreserveInlineDictEncoder()))
+    configure()
 
 @user_command('list')
 def list_packages():
@@ -202,22 +256,27 @@ def list_packages():
     depot = toml.load(get_depot(vers)[tag])
     for (k,v) in depot['snapshot'].items():
         print(k)
-        print("\n".join([ "  " + x for x in textwrap.wrap(v['desc'], 60)]))
+        print(wrap_indent(2, v['desc'], 60))
         print('')
 
 @user_command('snapshot')
 def snapshot():
     """list available snapshots"""
-    print("not implemented")
+    prj   = toml.load('lean-depot.toml')
+    vers  = prj['package']['lean_version']
+    depot = get_depot(vers)
+    for (k,v) in depot.items():
+        print(k)
+        print(wrap_indent(2, ', '.join(toml.load(v)['snapshot'].keys()), 60))
 
 @user_command('nightly')
 def nightly():
-    """test package against nightly snapshot"""
+    """test package against nightly snapshot (not implemented)"""
     print("not implemented")
 
-parser = argparse.ArgumentParser(description='Help about this command.')
+parser = argparse.ArgumentParser()
 parser.add_argument('cmd', choices=l.keys(), # required=False,
-                    help='an integer for the accumulator')
+                    help='command to get information on')
 
 @user_command('--help', parser)
 def help(cmd):
@@ -254,5 +313,5 @@ if __name__ == '__main__':
         usage()
 
 # Local Variables:
-# eval: (add-hook 'after-save-hook (lambda () (begin (delete-file "~/.mathlib/bin/lean-depot") (copy-file (buffer-file-name) "~/.mathlib/bin/lean-depot" t))) nil t)
+# eval: (add-hook 'after-save-hook (lambda () (copy-file (buffer-file-name) "~/.mathlib/bin/lean-depot" t)) nil t)
 # End:

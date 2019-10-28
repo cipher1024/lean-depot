@@ -37,7 +37,7 @@ def escapec : char → string
 | '\\' := "\\\\"
 | c    := string.singleton c
 
-private def escape (s : string) : string :=
+def escape (s : string) : string :=
 s.fold "" (λ s c, s ++ escapec c)
 
 /- TODO(Leo): has_to_string -/
