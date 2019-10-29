@@ -397,7 +397,7 @@ do let m : rbmap string (package × leanpkg.manifest) :=
           -- let header := sformat!"\n",
           let cmds   := sformat!"
 {p.1.dir}.pkg: init {\" \".intercalate deps}
-\tcd {p.1.dir} && leanpkg test | python ../../detect_errors.py || ({echo} >> ../../failure.toml && false)
+\tcd {p.1.dir} && leanpkg test | python detect_errors.py || ({echo} >> ../../failure.toml && false)
 \t@echo \"[snapshot.{p.1.name}]\" >> snapshot.toml
 \t@echo \"git = {toml.value.escape $ repr p.1.url}\" >> snapshot.toml
 \t@echo \"rev = \\\"{sha}\\\"\" >> snapshot.toml
