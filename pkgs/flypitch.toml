@@ -2,4 +2,4 @@
 url = ["https://github.com/flypitch/flypitch"]
 description = "A formal proof of the independence of the continuum hypothesis"
 auto_update = true
-commit = "c9f22eeab9ff3083020976f981c62d5bdc698958"
+commit = "47b33fcd6ddca27173a917fd0e7ea4eb8b3541cf"
