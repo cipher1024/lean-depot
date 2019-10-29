@@ -393,13 +393,14 @@ do let m : rbmap string (package × leanpkg.manifest) :=
    ps.mmap' $ λ p : package × _,
      do { some sha ← pure p.1.commit | pure (),
           let deps := p.2.dependencies.filter_map $ dep_to_target_name m,
-          let echo := sformat!"echo \"{p.1.name} = {{ git = \\\"{p.1.url}\\\", rev = \\\"{sha}\\\" } \"",
+          let git := toml.value.escape $ repr p.1.url,
+          let echo := sformat!"echo \"{p.1.name} = {{ git = {git}, rev = \\\"{sha}\\\" } \"",
           -- let header := sformat!"\n",
           let cmds   := sformat!"
 {p.1.dir}.pkg: init {\" \".intercalate deps}
-\tcd {p.1.dir} && leanpkg test | python detect_errors.py || ({echo} >> ../../failure.toml && false)
+\tcd {p.1.dir} && leanpkg test | cat || ({echo} >> ../../failure.toml && false)
 \t@echo \"[snapshot.{p.1.name}]\" >> snapshot.toml
-\t@echo \"git = {toml.value.escape $ repr p.1.url}\" >> snapshot.toml
+\t@echo \"git = {git}\" >> snapshot.toml
 \t@echo \"rev = \\\"{sha}\\\"\" >> snapshot.toml
 \t@echo \"desc = \\\"{p.1.description}\\\"\" >> snapshot.toml
 \t@echo \"\" >> snapshot.toml\n\n",
