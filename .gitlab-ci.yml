@@ -29,34 +29,57 @@ stages:
   - mathlib
   - build
 
-mathlib:
-  except:
-    - schedules
-  variables:
-    LEAN_VERSION: "3.4.2"
-  stage: mathlib
-  artifacts:
-    paths:
-      - build/snapshot-*/*/*
-      - build/snapshot-lean-$LEAN_VERSION/snapshot.toml
-      - build/snapshot-lean-$LEAN_VERSION/failure.toml
-      # - ../build/snapshot-*/*/*/src
-      # - ../build/snapshot-lean-$LEAN_VERSION/snapshot.toml
-      # - ../build/snapshot-lean-$LEAN_VERSION/failure.toml
-  script:
-    - lean --run src/check.lean --makefile $LEAN_VERSION snapshot-lean-$LEAN_VERSION
-    - cp scripts/detect_errors.py build/snapshot-lean-$LEAN_VERSION/
-    - cd build/snapshot-lean-$LEAN_VERSION
-    # - timeout 10200 make
-    - timeout 10200 make || true
-    # - timeout 10200 make | python detect_errors.py || true
-    # - timeout 10200 lean --run src/check.lean snapshot-2019-10 --mathlib | python scripts/detect_errors.py
+# mathlib:
+#   except:
+#     - schedules
+#   variables:
+#     LEAN_VERSION: "3.4.2"
+#   stage: mathlib
+#   retry:
+#     max: 3
+#     when: 
+#     - stuck_or_timeout_failure
+#   artifacts:
+#     expose_as: log
+#     when: on_failure
+#     paths:
+#       - build/snapshot-lean-$LEAN_VERSION/out.txt
+#   artifacts:
+#     expose_as: cache
+#     when: always
+#     paths:
+#       - build/snapshot-*/*/*
+#       - build/snapshot-lean-$LEAN_VERSION/snapshot.toml
+#       - build/snapshot-lean-$LEAN_VERSION/failure.toml
+#       # - ../build/snapshot-*/*/*/src
+#       # - ../build/snapshot-lean-$LEAN_VERSION/snapshot.toml
+#       # - ../build/snapshot-lean-$LEAN_VERSION/failure.toml
+#   script:
+#     - lean --run src/check.lean --makefile $LEAN_VERSION snapshot-lean-$LEAN_VERSION
+#     - cp scripts/detect_errors.py build/snapshot-lean-$LEAN_VERSION/
+#     - cd build/snapshot-lean-$LEAN_VERSION
+#     # - timeout 10200 make
+#     - timeout 10200 make || true
+#     # - timeout 10200 make | python detect_errors.py || true
+#     # - timeout 10200 lean --run src/check.lean snapshot-2019-10 --mathlib | python scripts/detect_errors.py
 
 test:
   except:
     - schedules
   stage: build
+  stage: mathlib
+  retry:
+    max: 3
+    when: 
+    - stuck_or_timeout_failure
   artifacts:
+    expose_as: log
+    when: on_failure
+    paths:
+      - build/snapshot-lean-$LEAN_VERSION/out.txt
+  artifacts:
+    expose_as: cache
+    when: always
     paths:
       - build/snapshot-*/*/*
       - build/snapshot-lean-$LEAN_VERSION/snapshot.toml
