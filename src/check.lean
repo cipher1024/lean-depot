@@ -1,4 +1,3 @@
-
 import system.io leanpkg.git leanpkg.main
 
 def io.cmd' (args : io.process.spawn_args) : io unit :=
@@ -398,7 +397,7 @@ do let m : rbmap string (package × leanpkg.manifest) :=
           -- let header := sformat!"\n",
           let cmds   := sformat!"
 {p.1.dir}.pkg: init {\" \".intercalate deps}
-\tcd {p.1.dir} && leanpkg test | cat || ({echo} >> ../../failure.toml && false)
+\tcd {p.1.dir} && leanpkg test || ({echo} >> ../../failure.toml && false)
 \t@echo \"[snapshot.{p.1.name}]\" >> snapshot.toml
 \t@echo \"git = {git}\" >> snapshot.toml
 \t@echo \"rev = \\\"{sha}\\\"\" >> snapshot.toml
