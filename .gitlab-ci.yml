@@ -69,7 +69,7 @@ test:
   stage: build
   stage: mathlib
   retry:
-    max: 3
+    max: 2
     when: 
     - stuck_or_timeout_failure
   artifacts:
