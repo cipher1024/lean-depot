@@ -296,6 +296,9 @@ do xs <- list_dir "pkgs",
 
 def with_cwd {α} (d : string) (m : io α) : io α :=
 do d' ← env.get_cwd,
+   put_str_ln "> set_cwd",
+   put_str_ln d',
+   put_str_ln d,
    finally (env.set_cwd d *> m) (env.set_cwd d')
 
 def mk_local (d : leanpkg.dependency) : leanpkg.dependency :=
