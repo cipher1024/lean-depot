@@ -384,9 +384,12 @@ do let m : rbmap string (package × leanpkg.manifest) :=
    let deps := ps.map $ λ p, sformat!"{p.1.dir}.pkg",
 
    let all_tgt := sformat!"all: {\" \".intercalate deps}\n\n",
-   let init_tgt := sformat!"init:
-\techo [failure] > failure.toml
-\techo \"\" > snapshot.toml
+   let init_tgt := sformat!"
+.PHONY: init all
+
+init:
+\t@echo [failure] > failure.toml
+\t@echo \"\" > snapshot.toml
 \n",
    write h (all_tgt ++ init_tgt).to_char_buffer,
    ps.mmap' $ λ p : package × _,
@@ -396,6 +399,7 @@ do let m : rbmap string (package × leanpkg.manifest) :=
           let echo := sformat!"echo \"{p.1.name} = {{ git = {git}, rev = \\\"{sha}\\\" } \"",
           -- let header := sformat!"\n",
           let cmds   := sformat!"
+.PHONY: {p.1.dir}.pkg
 {p.1.dir}.pkg: init {\" \".intercalate deps}
 \tcd {p.1.dir} && leanpkg test || ({echo} >> ../../failure.toml && false)
 \t@echo \"[snapshot.{p.1.name}]\" >> snapshot.toml
