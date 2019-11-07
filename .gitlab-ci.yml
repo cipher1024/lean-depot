@@ -78,7 +78,6 @@ test:
     paths:
       - build/snapshot-lean-$LEAN_VERSION/out.txt
   artifacts:
-    expose_as: cache
     when: always
     paths:
       - build/snapshot-*/*/*
