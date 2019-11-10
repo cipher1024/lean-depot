@@ -96,9 +96,7 @@ def vmap := rbmap string $ rbmap (string × string) unit
 
 -- #exit
 
-def conv_url : rbmap string string :=
-rbmap.from_list
-[ ("https://github.com/leanprover/mathlib", "https://github.com/leanprover-community/mathlib") ]
+variable conv_url : rbmap string string
 
 def canonicalize_url (s : string) : string :=
 let xs := list.reverse (s.to_list.reverse.drop_while (= '/')),
@@ -111,7 +109,7 @@ def dep_versions (l : leanpkg.dependency) (m : vmap) : vmap :=
 match l.src with
 | (path p) := m
 | (git url sha br) :=
-  let url := canonicalize_url url,
+  let url := canonicalize_url conv_url url,
       xs := (m.find url).get_or_else (mk_rbmap _ _) in
   m.insert url (xs.insert (sha, br.get_or_else "") ())
 end
@@ -296,15 +294,13 @@ do xs <- list_dir "pkgs",
 
 def with_cwd {α} (d : string) (m : io α) : io α :=
 do d' ← env.get_cwd,
-   put_str_ln "> set_cwd",
-   put_str_ln d',
-   put_str_ln d,
+   mkdir d tt,
    finally (env.set_cwd d *> m) (env.set_cwd d')
 
 def mk_local (d : leanpkg.dependency) : leanpkg.dependency :=
 { src := match d.src with
          | (path p) := path p
-         | (git u c b) := path $ "../../" ++ dir_part (split_path $ canonicalize_url u)
+         | (git u c b) := path $ "../../" ++ dir_part (split_path $ canonicalize_url conv_url u)
          end
   .. d }
 
@@ -370,13 +366,13 @@ def checkout_snapshot' (args : app_args) :
                -- put_str_ln r.url,
                -- env.get_cwd >>= put_str_ln,
                leanpkg.write_manifest
-                 { dependencies := m.dependencies.map mk_local,
+                 { dependencies := m.dependencies.map (mk_local conv_url),
                    lean_version := args.lean_version, .. m },
                return sformat!"{sd}/{dir}"},
         return (sd) }
 
 def dep_to_target_name (m : rbmap string (package × leanpkg.manifest)) : leanpkg.dependency → option string
-| { src := (leanpkg.source.git url _ _), .. } := m.find (canonicalize_url url) >>= λ ⟨p,_⟩, some sformat!"{p.dir}.pkg"
+| { src := (leanpkg.source.git url _ _), .. } := m.find (canonicalize_url conv_url url) >>= λ ⟨p,_⟩, some sformat!"{p.dir}.pkg"
 | { src := (leanpkg.source.path _), .. } := none
 
 def write_Makefile (dir : string) (ps : list $ package × leanpkg.manifest) : io unit :=
@@ -397,7 +393,7 @@ init:
    write h (all_tgt ++ init_tgt).to_char_buffer,
    ps.mmap' $ λ p : package × _,
      do { some sha ← pure p.1.commit | pure (),
-          let deps := p.2.dependencies.filter_map $ dep_to_target_name m,
+          let deps := p.2.dependencies.filter_map $ dep_to_target_name conv_url m,
           let git := toml.value.escape $ repr p.1.url,
           let echo := sformat!"echo \"{p.1.name} = {{ git = {git}, rev = \\\"{sha}\\\" } \"",
           -- let header := sformat!"\n",
@@ -432,8 +428,9 @@ do xs ← list_packages',
    -- let s : list (ℕ × list (string × string)) := snapshots zs,
    -- xs.mmap' $ io.put_str_ln ∘ to_string,
    update_package_desc ys,
-   dir ← checkout_snapshot' n ys,
-   write_Makefile dir ys,
+   let conv_url : rbmap string string := rbmap.from_list (ys.bind $ λ ⟨p,q⟩, p.url.map $ λ q, (q, p.url.head)),
+   dir ← checkout_snapshot' conv_url n ys,
+   write_Makefile conv_url dir ys,
    pure ()
    -- return ds.join,
 
