@@ -1,5 +1,5 @@
 [package]
-url = ["https://github.com/unitb/lean-lib"]
+url = "https://github.com/unitb/lean-lib"
 description = "missing"
 auto_update = true
 commit = "439b80e606b4ebe4909a08b1d77f4f5c0ee3dee9"
