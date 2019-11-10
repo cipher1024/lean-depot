@@ -1,0 +1,42 @@
+pool:
+  name: Azure Pipelines
+#Your build pipeline references an undefined variable named ‘Pipeline.Workspace’. Create or edit the build pipeline for this YAML file, define the variable on the Variables tab. See https://go.microsoft.com/fwlink/?linkid=865972
+
+steps:
+- bash: scripts/setup_lean.sh
+- bash: |
+   # Write your commands here
+   TAG=snapshot-`date -u "+%Y-%m"`
+   set -x
+   mkdir -p build/snapshot-lean-$LEAN_VERSION
+   mkdir -p build/root
+   lean --run src/check.lean --makefile $LEAN_VERSION snapshot-lean-$LEAN_VERSION
+
+   cp scripts/detect_errors.py build/snapshot-lean-$LEAN_VERSION/
+
+   cd build/snapshot-lean-$LEAN_VERSION
+   make -k || true
+   cat Makefile
+   cat snapshot.toml
+   cat failure.toml
+
+  displayName: 'Bash Script'
+  strategy:
+    matrix:
+      Lean342:
+        LEAN_VERSION: '3.4.2'
+      Lean350:
+        LEAN_VERSION: 'nightly'
+    maxParallel: 2
+
+- task: Cache@2
+  displayName: Cache
+  inputs:
+    key: '"build"'
+    path: 'build/*'
+
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish Pipeline Artifact'
+  inputs:
+    targetPath: '$(Pipeline.Workspace)/build/'
+    artifact: 'Build result'
