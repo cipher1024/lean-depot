@@ -32,9 +32,11 @@ steps:
    cat Makefile
    cat snapshot.toml
    cat failure.toml
-
-  displayName: 'Bash Script'
+  displayName: 'Build'
   timeoutInMinutes: 0
+  cancelTimeoutInMinutes: 2
+
+
 
 - task: Cache@2
   displayName: Cache
