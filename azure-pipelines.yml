@@ -13,7 +13,7 @@ strategy:
   maxParallel: 2
 
 steps:
-- bash: scripts/setup_lean.sh
+- bash: source scripts/setup_lean.sh
 - bash: |
    # Write your commands here
    TAG=snapshot-`date -u "+%Y-%m"`
