@@ -41,6 +41,13 @@ jobs:
       cat failure.toml
       displayName: 'Build'
 
+  - task: DownloadBuildArtifacts@0
+    inputs:
+      buildType: 'current'
+      downloadType: 'single'
+      artifactName: 'drop'
+      downloadPath: '$(System.ArtifactsDirectory)'
+
   - task: Cache@2
     displayName: Cache
     inputs:
@@ -52,3 +59,8 @@ jobs:
     inputs:
       targetPath: 'build/'
       artifact: 'Build result'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: 'build/'
+      artifactName: drop
