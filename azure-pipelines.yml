@@ -41,7 +41,7 @@ jobs:
       cat failure.toml
     displayName: 'Build'
   - publish: build/
-    artifact: binaries
+    artifact: binaries-$(LEAN_VERSION)
 
   # - task: DownloadBuildArtifacts@0
   #   inputs:
