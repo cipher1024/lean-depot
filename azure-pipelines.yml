@@ -34,6 +34,7 @@ steps:
    cat failure.toml
 
   displayName: 'Bash Script'
+  timeoutInMinutes: 0
 
 - task: Cache@2
   displayName: Cache
