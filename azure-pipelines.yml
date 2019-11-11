@@ -20,6 +20,8 @@ jobs:
     maxParallel: 2
 
   steps:
+  - publish: build/
+    artifact: binaries
   - bash: |
       # source ~/.elan/env
       source scripts/setup_lean.sh
@@ -41,26 +43,26 @@ jobs:
       cat failure.toml
       displayName: 'Build'
 
-  - task: DownloadBuildArtifacts@0
-    inputs:
-      buildType: 'current'
-      downloadType: 'single'
-      artifactName: 'drop'
-      downloadPath: '$(System.ArtifactsDirectory)'
+  # - task: DownloadBuildArtifacts@0
+  #   inputs:
+  #     buildType: 'current'
+  #     downloadType: 'single'
+  #     artifactName: 'drop'
+  #     downloadPath: '$(System.ArtifactsDirectory)'
 
-  - task: Cache@2
-    displayName: Cache
-    inputs:
-      key: '"build"'
-      path: 'build/*'
+  # - task: Cache@2
+  #   displayName: Cache
+  #   inputs:
+  #     key: '"build"'
+  #     path: 'build/*'
 
-  - task: PublishPipelineArtifact@1
-    displayName: 'Publish Pipeline Artifact'
-    inputs:
-      targetPath: 'build/'
-      artifact: 'Build result'
+  # - task: PublishPipelineArtifact@1
+  #   displayName: 'Publish Pipeline Artifact'
+  #   inputs:
+  #     targetPath: 'build/'
+  #     artifact: 'Build result'
 
-  - task: PublishBuildArtifacts@1
-    inputs:
-      pathtoPublish: 'build/'
-      artifactName: drop
+  # - task: PublishBuildArtifacts@1
+  #   inputs:
+  #     pathtoPublish: 'build/'
+  #     artifactName: drop
