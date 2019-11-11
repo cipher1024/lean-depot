@@ -13,8 +13,9 @@ strategy:
   maxParallel: 2
 
 steps:
-- bash: source scripts/setup_lean.sh
 - bash: |
+   # source ~/.elan/env
+   source scripts/setup_lean.sh
    # Write your commands here
    TAG=snapshot-`date -u "+%Y-%m"`
    set -x
