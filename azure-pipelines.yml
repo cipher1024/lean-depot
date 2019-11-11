@@ -39,7 +39,7 @@ jobs:
       cat Makefile
       cat snapshot.toml
       cat failure.toml
-      displayName: 'Build'
+    displayName: 'Build'
   - publish: build/
     artifact: binaries
 
