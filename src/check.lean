@@ -372,9 +372,14 @@ def checkout_snapshot' (args : app_args) :
                end,
                -- put_str_ln r.url,
                -- env.get_cwd >>= put_str_ln,
+               let version_string : string :=
+                   if "nightly".is_prefix_of args.lean_version ∨
+                      "3.5.".is_prefix_of args.lean_version
+                     then "leanprover-community/lean:" ++ args.lean_version
+                     else args.lean_version,
                leanpkg.write_manifest
                  { dependencies := m.dependencies.map (mk_local conv_url),
-                   lean_version := args.lean_version, .. m },
+                   lean_version := version_string, .. m },
                return sformat!"{sd}/{dir}"},
         return (sd) }
 
