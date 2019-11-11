@@ -20,8 +20,6 @@ jobs:
     maxParallel: 2
 
   steps:
-  - publish: build/
-    artifact: binaries
   - bash: |
       # source ~/.elan/env
       source scripts/setup_lean.sh
@@ -42,6 +40,8 @@ jobs:
       cat snapshot.toml
       cat failure.toml
       displayName: 'Build'
+  - publish: build/
+    artifact: binaries
 
   # - task: DownloadBuildArtifacts@0
   #   inputs:
