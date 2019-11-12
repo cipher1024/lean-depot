@@ -20,6 +20,12 @@ jobs:
     maxParallel: 2
 
   steps:
+  - task: Cache@2
+    displayName: Cache
+    inputs:
+      key: '"build-$(LEAN_VERSION)"'
+      path: 'build/*'
+
   - bash: |
       # source ~/.elan/env
       source scripts/setup_lean.sh
@@ -49,12 +55,6 @@ jobs:
   #     downloadType: 'single'
   #     artifactName: 'drop'
   #     downloadPath: '$(System.ArtifactsDirectory)'
-
-  # - task: Cache@2
-  #   displayName: Cache
-  #   inputs:
-  #     key: '"build"'
-  #     path: 'build/*'
 
   # - task: PublishPipelineArtifact@1
   #   displayName: 'Publish Pipeline Artifact'
