@@ -412,7 +412,7 @@ init:
           let cmds   := sformat!"
 .PHONY: {p.1.dir}.pkg
 {p.1.dir}.pkg: init {\" \".intercalate deps}
-\tcd {p.1.dir} && leanpkg test || ({echo} >> ../../failure.toml && false)
+\tcd {p.1.dir} && time leanpkg test || ({echo} >> ../../failure.toml && false)
 \t@echo \"[snapshot.{p.1.name}]\" >> snapshot.toml
 \t@echo \"git = {git}\" >> snapshot.toml
 \t@echo \"rev = \\\"{sha}\\\"\" >> snapshot.toml
