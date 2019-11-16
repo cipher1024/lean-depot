@@ -40,11 +40,22 @@ jobs:
 
       cp scripts/detect_errors.py build/snapshot-lean-$LEAN_VERSION/
 
+      git clone --single-branch --branch snapshot https://github.com/cipher1024/lean-depot snapshot
+      mkdir -p snapshot/3.4.2
+      mkdir -p snapshot/3.5.0
+      mkdir -p snapshot/lean-nightly
       cd build/snapshot-lean-$LEAN_VERSION
       make -k || true
       cat Makefile
       cat snapshot.toml
       cat failure.toml
+
+      cp snapshot.toml failure.toml ../../snapshot/$LEAN_VERSION/
+      cd ../../snapshot
+      git add $LEAN_VERSION/snapshot.toml $LEAN_VERSION/failure.toml
+      git commit -m "new" || true
+      git push origin snapshot || true
+
     displayName: 'Build'
   - publish: build/
     artifact: binaries-$(LEAN_VERSION)
