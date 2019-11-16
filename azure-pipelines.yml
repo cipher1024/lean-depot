@@ -62,6 +62,8 @@ jobs:
     displayName: 'Build'
   - publish: build/
     artifact: binaries-$(LEAN_VERSION)
+  - publish: snapshot/$(LEAN_VERSION)/
+    artifact: binaries-$(LEAN_VERSION)-$(TAG)
 
   # - task: DownloadBuildArtifacts@0
   #   inputs:
