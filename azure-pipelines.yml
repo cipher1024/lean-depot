@@ -23,7 +23,10 @@ jobs:
   - task: Cache@2
     displayName: Cache
     inputs:
-      key: '"build-$(LEAN_VERSION)"'
+      key: 'build | "$(Agent.OS)"'
+      restoreKeys: |
+         build | "$(Agent.OS)"
+         build
       path: 'build/*'
 
   - bash: |
