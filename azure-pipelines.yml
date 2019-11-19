@@ -36,7 +36,7 @@ jobs:
   - bash: |
       # source ~/.elan/env
       source scripts/setup_lean.sh
-      curl https://raw.githubusercontent.com/leanprover-community/mathlib-tools/master/scripts/remote-install-update-mathlib.sh -sSf | bash
+      wget -q https://raw.githubusercontent.com/leanprover-community/mathlib-tools/master/scripts/install_debian.sh && bash install_debian.sh ; rm -f install_debian.sh && source ~/.profile
       echo $DATE
       # Write your commands here
       # TAG=snapshot-`date -u "+%Y-%m"`
