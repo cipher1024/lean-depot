@@ -6,13 +6,13 @@ trigger:
 pr:
   - master
 
+variables:
+  TAG: $[counter(format('snapshot-{0:yyyy-MM}', pipeline.startTime), 1000)]  
+
 jobs:
 - job: 'build'
   timeoutInMinutes: 0
   cancelTimeoutInMinutes: 2
-
-  # variables:
-  #   TAG: $[counter(format('snapshot-{0:yyyy-MM}', pipeline.startTime), 1000)]  
 
   strategy:
     matrix:
