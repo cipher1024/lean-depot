@@ -48,7 +48,7 @@ jobs:
 
       cp scripts/detect_errors.py build/snapshot-lean-$LEAN_VERSION/
 
-      git clone --single-branch --branch snapshot https://github.com/cipher1024/lean-depot snapshot
+      git clone --single-branch --branch snapshot https://$GITHUB_TOKEN@github.com/cipher1024/lean-depot snapshot
       mkdir -p snapshot/3.4.2
       mkdir -p snapshot/3.5.0
       mkdir -p snapshot/nightly
