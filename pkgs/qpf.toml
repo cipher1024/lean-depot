@@ -2,4 +2,5 @@
 url = "https://github.com/avigad/qpf"
 description = "Datatypes as quotients of polynomial functors"
 auto_update = true
+lean_support = ["3.4.2","3.5.0","nightly"]
 commit = "debe2eacb8cf46b21aba2eaf3f2e20940da0263b"

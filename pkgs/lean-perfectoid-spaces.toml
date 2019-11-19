@@ -2,4 +2,5 @@
 url = "https://github.com/leanprover-community/lean-perfectoid-spaces"
 description = "Perfectoid spaces in the Lean formal theorem prover"
 auto_update = true
+lean_support = ["3.4.2","3.5.0","nightly"]
 commit = "14280435515dea23fc143f7dee4ff2e514233786"

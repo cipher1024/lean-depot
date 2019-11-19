@@ -137,6 +137,7 @@ structure package :=
 (alternate_urls : list string)
 (commit : option string)
 (update : bool)
+(lean_support : list string)
 (description : string)
 (author : option string )
 (left_over     : list (string × toml.value))
@@ -149,6 +150,7 @@ instance : has_to_string package :=
   alternate_urls := {repr p.alternate_urls},
   dir := {repr p.dir},
   commit := {repr p.commit},
+  lean_support := {repr p.lean_support},
   update := {p.update},
   description := {p.description},
   author := {p.author} }" }
@@ -265,7 +267,8 @@ let sha := match p.commit with
 ("package", toml.value.table $
   [ ("url", toml.value.str p.url),
     ("description", toml.value.str p.description),
-    ("auto_update", toml.value.bool p.update) ]
+    ("auto_update", toml.value.bool p.update),
+    ("lean_support", toml.value.array $ toml.value.str <$> p.lean_support) ]
   ++ alternate_urls ++ sha ++ author ) :: p.left_over
 
 def package.from_toml (fn : string) (t : toml.value) : option package :=
@@ -274,12 +277,14 @@ do (pkg,xs) ← split_off t "package",
    alt_url ← lookup_optional_toml (list string) pkg "alternate_urls" ,
    desc   ← lookup_toml string pkg "description",
    update ← lookup_toml bool   pkg "auto_update",
+   lean_support ← lookup_toml (list string) pkg "lean_support",
    commit ← lookup_optional_toml string pkg "commit",
    author ← lookup_optional_toml string pkg "author",
    pure { config_file := fn, url := url,
           alternate_urls := alt_url.get_or_else [],
           update := update,
           commit := commit, left_over := xs,
+          lean_support := lean_support,
           author := author,
           description := desc,
           dir := dir_part (split_path url) }
@@ -294,10 +299,14 @@ leanpkg.write_file fn.config_file (repr fn.to_toml)
 
 -- #eval parse_package_file "pkgs/mathlib.toml" >>= print
 
-def list_packages' : io (list package) :=
+def list_packages' (v : option string := none) : io (list package) :=
 do xs <- list_dir "pkgs",
    let xs := xs.filter $ λ fn, (split_ext fn).ilast = "toml",
-   xs.mmap parse_package_file
+   xs ← xs.mmap parse_package_file,
+   match v with
+   | some v := return $ xs.filter $ λ p, v ∈ p.lean_support
+   | none := pure xs
+   end
 
 def with_cwd {α} (d : string) (m : io α) : io α :=
 do d' ← env.get_cwd,
@@ -422,7 +431,7 @@ init:
    close h
 
 def setup_snapshots (n : app_args) : io unit :=
-do xs ← list_packages',
+do xs ← list_packages' n.lean_version,
    -- print xs,
    mkdir "build/root" tt,
    ys ← with_cwd "build/root" $

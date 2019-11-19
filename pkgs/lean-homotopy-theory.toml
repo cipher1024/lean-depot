@@ -2,4 +2,5 @@
 url = "https://github.com/cipher1024/lean-homotopy-theory"
 description = "A development of homotopy theory in the Lean formal theorem prover"
 auto_update = true
+lean_support = ["3.4.2","3.5.0","nightly"]
 commit = "56264dab336a843ad30a48bca77dd700d9508512"
