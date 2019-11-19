@@ -7,7 +7,7 @@ pr:
   - master
 
 variables:
-  TAG: $[format('snapshot-{0:yyyy-MM}', pipeline.startTime)]  
+  TAG: $[format('{0:yyyyMMdd}', pipeline.startTime)]  
 
 jobs:
 - job: 'build'
