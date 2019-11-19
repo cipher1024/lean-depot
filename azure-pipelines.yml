@@ -63,8 +63,9 @@ jobs:
       git add $LEAN_VERSION/snapshot.toml $LEAN_VERSION/failure.toml
       git commit -m "new" || true
       git push origin snapshot || true
+    env:
+      GITHUB_TOKEN: $(GITHUB_TOKEN)
 
-    displayName: 'Build'
   - publish: build/
     artifact: binaries-$(LEAN_VERSION)
   - publish: snapshot/$(LEAN_VERSION)/
