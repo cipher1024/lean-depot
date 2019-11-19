@@ -8,7 +8,7 @@ pr:
 
 variables:
   TAG: $[counter(format('{0:yyyyMMdd}', pipeline.startTime), 1000)]
-  DATE: $[format('{0:yyyyMMdd}', pipeline.startTime)]
+  DATE: $[format('{0:yyyy}-{0:MM}', pipeline.startTime)]
 
 jobs:
 - job: 'build'
