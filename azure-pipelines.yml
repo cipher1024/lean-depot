@@ -7,7 +7,8 @@ pr:
   - master
 
 variables:
-  TAG: $[format('{0:yyyyMMdd}', pipeline.startTime)]  
+  TAG: $[counter(format('{0:yyyyMMdd}', pipeline.startTime), 1000)]
+  DATE: $[format('{0:yyyyMMdd}', pipeline.startTime)]
 
 jobs:
 - job: 'build'
@@ -35,6 +36,7 @@ jobs:
   - bash: |
       # source ~/.elan/env
       source scripts/setup_lean.sh
+      echo $DATE
       # Write your commands here
       # TAG=snapshot-`date -u "+%Y-%m"`
 
@@ -49,7 +51,7 @@ jobs:
       git clone --single-branch --branch snapshot https://github.com/cipher1024/lean-depot snapshot
       mkdir -p snapshot/3.4.2
       mkdir -p snapshot/3.5.0
-      mkdir -p snapshot/lean-nightly
+      mkdir -p snapshot/nightly
       cd build/snapshot-lean-$LEAN_VERSION
       # make -k || true
       # cat Makefile
