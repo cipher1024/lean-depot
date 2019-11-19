@@ -7,7 +7,7 @@ pr:
   - master
 
 variables:
-  TAG: $[counter(format('{0:yyyyMMdd}', pipeline.startTime), 1000)]
+  TAG: $[format('{0:yyyyMMdd}.{1}', pipeline.startTime, counter(format('{0:yyyyMMdd}', pipeline.startTime), 1000))]
   DATE: $[format('{0:yyyy}-{0:MM}', pipeline.startTime)]
 
 jobs:
@@ -53,10 +53,10 @@ jobs:
       mkdir -p snapshot/3.5.0
       mkdir -p snapshot/nightly
       cd build/snapshot-lean-$LEAN_VERSION
-      # make -k || true
-      # cat Makefile
-      # cat snapshot.toml
-      # cat failure.toml
+      make -k flypitch/flypitch.pkg || true
+      cat Makefile
+      cat snapshot.toml
+      cat failure.toml
 
       cp snapshot.toml failure.toml ../../snapshot/$LEAN_VERSION/
       cd ../../snapshot
