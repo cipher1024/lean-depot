@@ -53,10 +53,10 @@ jobs:
       mkdir -p snapshot/3.5.0
       mkdir -p snapshot/nightly
       cd build/snapshot-lean-$LEAN_VERSION
-      make -k flypitch/flypitch.pkg || true
-      cat Makefile
-      cat snapshot.toml
-      cat failure.toml
+      # make -k flypitch/flypitch.pkg || true
+      # cat Makefile
+      # cat snapshot.toml
+      # cat failure.toml
 
       cp snapshot.toml failure.toml ../../snapshot/$LEAN_VERSION/
       cd ../../snapshot
