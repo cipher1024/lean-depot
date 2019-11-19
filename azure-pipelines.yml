@@ -60,7 +60,7 @@ jobs:
       pushd leanprover-community/mathlib
       cache-olean --fetch
       popd
-      make -k flypitch/flypitch.pkg || true
+      make -k || true
       cat Makefile
       cat snapshot.toml
       cat failure.toml
