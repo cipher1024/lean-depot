@@ -2,4 +2,5 @@
 url = "https://github.com/cipher1024/slim_check"
 description = "Randomized, property-based testing for Lean"
 auto_update = true
+lean_support = ["3.4.2","3.5.0","nightly"]
 commit = "5969b7f72e01fdd46f2502ed0cbf69c0699061d4"
