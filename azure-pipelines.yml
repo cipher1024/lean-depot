@@ -48,6 +48,7 @@ jobs:
 
       cp scripts/detect_errors.py build/snapshot-lean-$LEAN_VERSION/
 
+      git config --global user.name "Build Bot"
       git clone --single-branch --branch snapshot https://$GITHUB_TOKEN@github.com/cipher1024/lean-depot.git snapshot
       mkdir -p snapshot/3.4.2
       mkdir -p snapshot/3.5.0
