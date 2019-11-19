@@ -11,6 +11,10 @@ jobs:
   timeoutInMinutes: 0
   cancelTimeoutInMinutes: 2
 
+  variables:
+    TAG: $[format('snapshot-{0:yyyy-MM}', pipeline.startTime)]
+  
+
   strategy:
     matrix:
       Lean342:
@@ -24,16 +28,16 @@ jobs:
     displayName: Cache
     inputs:
       key: 'build | "$(Agent.OS)"'
+      path: 'build'
       restoreKeys: |
-         build | "$(Agent.OS)"
-         build
-      path: 'build/*'
+        build | "$(Agent.OS)"
+        build
 
   - bash: |
       # source ~/.elan/env
       source scripts/setup_lean.sh
       # Write your commands here
-      TAG=snapshot-`date -u "+%Y-%m"`
+      # TAG=snapshot-`date -u "+%Y-%m"`
 
       set -x
 
@@ -48,10 +52,10 @@ jobs:
       mkdir -p snapshot/3.5.0
       mkdir -p snapshot/lean-nightly
       cd build/snapshot-lean-$LEAN_VERSION
-      make -k || true
-      cat Makefile
-      cat snapshot.toml
-      cat failure.toml
+      # make -k || true
+      # cat Makefile
+      # cat snapshot.toml
+      # cat failure.toml
 
       cp snapshot.toml failure.toml ../../snapshot/$LEAN_VERSION/
       cd ../../snapshot
