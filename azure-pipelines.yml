@@ -60,10 +60,10 @@ jobs:
       pushd leanprover-community/mathlib
       cache-olean --fetch
       popd
-      # make -k flypitch/flypitch.pkg || true
-      # cat Makefile
-      # cat snapshot.toml
-      # cat failure.toml
+      make -k flypitch/flypitch.pkg || true
+      cat Makefile
+      cat snapshot.toml
+      cat failure.toml
 
       cp snapshot.toml failure.toml ../../snapshot/$LEAN_VERSION/
       cd ../../snapshot
@@ -76,7 +76,7 @@ jobs:
   - publish: build/
     artifact: binaries-$(LEAN_VERSION)
   - publish: snapshot/$(LEAN_VERSION)/
-    artifact: binaries-$(LEAN_VERSION)-$(TAG)
+    artifact: snapshot-$(LEAN_VERSION)-$(TAG)
 
   # - task: DownloadBuildArtifacts@0
   #   inputs:
