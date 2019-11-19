@@ -1,0 +1,11 @@
+
+[snapshot.mathlib]
+git = "https://github.com/leanprover-community/mathlib"
+rev = "0ea3dfe4967657e6ffc1e2b573551443c6309c3d"
+desc = "Lean mathematical components library"
+
+[snapshot.flypitch]
+git = "https://github.com/flypitch/flypitch"
+rev = "9d2f16f24642da7fb3c49cd042606eab9f52592b"
+desc = "A formal proof of the independence of the continuum hypothesis"
+
