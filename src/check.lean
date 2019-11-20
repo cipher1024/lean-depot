@@ -415,7 +415,7 @@ init:
    ps.mmap' $ λ p : package × _,
      do { some sha ← pure p.1.commit | pure (),
           let deps := p.2.dependencies.filter_map $ dep_to_target_name conv_url m,
-          let git := toml.value.escape $ repr p.1.url,
+          let git := list.map (toml.value.escape ∘ repr) $ p.1.url :: p.1.alternate_urls,
           let echo := sformat!"echo \"{p.1.name} = {{ git = {git}, rev = \\\"{sha}\\\" } \"",
           -- let header := sformat!"\n",
           let cmds   := sformat!"
