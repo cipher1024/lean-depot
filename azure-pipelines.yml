@@ -24,13 +24,13 @@ jobs:
     maxParallel: 2
 
   steps:
-  - task: CacheBeta@1
+  - task: Cache@2
     displayName: Cache
     inputs:
-      key: 'build | "$(Agent.OS)"'
+      key: build | $(Agent.OS)
       path: $(Pipeline.Workspace)/build
       restoreKeys: |
-        build | "$(Agent.OS)"
+        build | $(Agent.OS)
         build
 
   - bash: |
