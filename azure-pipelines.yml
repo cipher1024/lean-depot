@@ -28,7 +28,7 @@ jobs:
     displayName: Cache
     inputs:
       key: 'build | "$(Agent.OS)"'
-      path: 'build'
+      path: $(Pipeline.Workspace)/build
       restoreKeys: |
         build | "$(Agent.OS)"
         build
