@@ -1,0 +1,6 @@
+[package]
+url = "https://github.com/leanprover-community/tutorials"
+description = "Tutorial for Lean and Mathlib"
+auto_update = true
+lean_support = ["3.4.2","3.5.0","nightly"]
+commit = "e484936b91a454a81a5d9521d9a2fd16fe4a8a4b"
