@@ -4,4 +4,4 @@ description = "Lean mathematical components library"
 auto_update = true
 alternate_urls = ["https://github.com/leanprover/mathlib"]
 lean_support = ["3.4.2","3.5.0","nightly"]
-commit = "0ea3dfe4967657e6ffc1e2b573551443c6309c3d"
+commit = "bf509d782bb6d7a1e0e62f8b88b136e2d671efba"
