@@ -1,0 +1,41 @@
+
+[snapshot.mathlib]
+git = ["https://github.com/leanprover-community/mathlib", "https://github.com/leanprover/mathlib"]
+rev = "0ea3dfe4967657e6ffc1e2b573551443c6309c3d"
+desc = "Lean mathematical components library"
+
+[snapshot.flypitch]
+git = ["https://github.com/flypitch/flypitch"]
+rev = "9d2f16f24642da7fb3c49cd042606eab9f52592b"
+desc = "A formal proof of the independence of the continuum hypothesis"
+
+[snapshot.lean-homotopy-theory]
+git = ["https://github.com/cipher1024/lean-homotopy-theory"]
+rev = "56264dab336a843ad30a48bca77dd700d9508512"
+desc = "A development of homotopy theory in the Lean formal theorem prover"
+
+[snapshot.lean-perfectoid-spaces]
+git = ["https://github.com/leanprover-community/lean-perfectoid-spaces"]
+rev = "14280435515dea23fc143f7dee4ff2e514233786"
+desc = "Perfectoid spaces in the Lean formal theorem prover"
+
+[snapshot.mathlib-nursery]
+git = ["https://github.com/leanprover-community/mathlib-nursery"]
+rev = "0479b31fa5b4d39f41e89b8584c9f5bf5271e8ec"
+desc = "missing"
+
+[snapshot.qpf]
+git = ["https://github.com/avigad/qpf"]
+rev = "debe2eacb8cf46b21aba2eaf3f2e20940da0263b"
+desc = "Datatypes as quotients of polynomial functors"
+
+[snapshot.unitb-lean-lib]
+git = ["https://github.com/unitb/lean-lib"]
+rev = "439b80e606b4ebe4909a08b1d77f4f5c0ee3dee9"
+desc = "missing"
+
+[snapshot.slim_check]
+git = ["https://github.com/cipher1024/slim_check"]
+rev = "5969b7f72e01fdd46f2502ed0cbf69c0699061d4"
+desc = "Randomized, property-based testing for Lean"
+
