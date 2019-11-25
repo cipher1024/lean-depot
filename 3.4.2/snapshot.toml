@@ -4,3 +4,8 @@ git = ["https://github.com/leanprover-community/mathlib", "https://github.com/le
 rev = "bf509d782bb6d7a1e0e62f8b88b136e2d671efba"
 desc = "Lean mathematical components library"
 
+[snapshot.mathlib-tutorials]
+git = ["https://github.com/leanprover-community/tutorials"]
+rev = "e484936b91a454a81a5d9521d9a2fd16fe4a8a4b"
+desc = "Tutorial for Lean and Mathlib"
+
