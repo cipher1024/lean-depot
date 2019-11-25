@@ -1,1 +1,6 @@
 [failure]
+flypitch = { git = ["https://github.com/flypitch/flypitch"], rev = "9d2f16f24642da7fb3c49cd042606eab9f52592b" } 
+lean-homotopy-theory = { git = ["https://github.com/cipher1024/lean-homotopy-theory"], rev = "56264dab336a843ad30a48bca77dd700d9508512" } 
+lean-perfectoid-spaces = { git = ["https://github.com/leanprover-community/lean-perfectoid-spaces"], rev = "14280435515dea23fc143f7dee4ff2e514233786" } 
+mathlib-nursery = { git = ["https://github.com/leanprover-community/mathlib-nursery"], rev = "0479b31fa5b4d39f41e89b8584c9f5bf5271e8ec" } 
+qpf = { git = ["https://github.com/avigad/qpf"], rev = "debe2eacb8cf46b21aba2eaf3f2e20940da0263b" } 
